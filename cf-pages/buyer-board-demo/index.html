@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>共好客需看板（Demo）</title>
+<meta name="description" content="相信共好大聯盟買方客需刊登與媒合看板的第一版可互動示範，資料僅存於瀏覽器 localStorage。">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --ink-900:#1c2530;
+    --ink-700:#4b5563;
+    --ink-400:#8b93a0;
+    --paper-0:#e9e6da;
+    --paper-1:#fbfaf4;
+    --paper-2:#f2efe3;
+    --line-hair:#dad5c4;
+    --seal:#a6312c;
+    --seal-ink:#7c231f;
+    --seal-soft:#f3ded9;
+    --line-green:#06c755;
+    --ok:#2f7d5b;
+    --ok-soft:#e1ede6;
+    --warn:#a6721a;
+    --warn-soft:#f2e7d3;
+    --focus:#2f6fa6;
+    --shadow: 0 1px 2px rgba(28,37,48,.06), 0 6px 16px -8px rgba(28,37,48,.18);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink-900:#ece8dc;
+      --ink-700:#b7bcc4;
+      --ink-400:#7d8590;
+      --paper-0:#14181c;
+      --paper-1:#1d2228;
+      --paper-2:#232a31;
+      --line-hair:#323942;
+      --seal:#d9695f;
+      --seal-ink:#f0a89f;
+      --seal-soft:#3a2422;
+      --line-green:#2fe07a;
+      --ok:#4fae84;
+      --ok-soft:#1d3128;
+      --warn:#d6a13b;
+      --warn-soft:#332a17;
+      --focus:#6badea;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 24px -12px rgba(0,0,0,.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink-900:#ece8dc;
+    --ink-700:#b7bcc4;
+    --ink-400:#7d8590;
+    --paper-0:#14181c;
+    --paper-1:#1d2228;
+    --paper-2:#232a31;
+    --line-hair:#323942;
+    --seal:#d9695f;
+    --seal-ink:#f0a89f;
+    --seal-soft:#3a2422;
+    --line-green:#2fe07a;
+    --ok:#4fae84;
+    --ok-soft:#1d3128;
+    --warn:#d6a13b;
+    --warn-soft:#332a17;
+    --focus:#6badea;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 24px -12px rgba(0,0,0,.6);
+    color-scheme: dark;
+  }
+
+  *{ box-sizing:border-box; }
+  html, body{ background:var(--paper-0); }
+  body{
+    margin:0;
+    color:var(--ink-900);
+    font-family:"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  h1,h2,h3{ font-family:"Noto Serif TC","Noto Sans TC",serif; text-wrap:balance; margin:0; }
+  a{ color:inherit; }
+  button, input, select, textarea{ font-family:inherit; font-size:14px; }
+  :focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+
+  .skin{ max-width:1180px; margin:0 auto; padding:0 20px 56px; }
+
+  /* ---------- header ---------- */
+  header.top{
+    background:var(--ink-900);
+    color:var(--paper-1);
+    padding:22px 20px 26px;
+  }
+  .top-inner{
+    max-width:1180px; margin:0 auto;
+    display:flex; align-items:flex-start; gap:18px; flex-wrap:wrap;
+    justify-content:space-between;
+  }
+  .brand{ display:flex; gap:14px; align-items:center; }
+  .seal-mark{
+    flex:none; width:52px; height:52px; border-radius:50%;
+    border:2.5px solid var(--seal);
+    display:flex; align-items:center; justify-content:center;
+    position:relative; transform:rotate(-6deg);
+  }
+  .seal-mark::before{
+    content:""; position:absolute; inset:4px; border-radius:50%;
+    border:1px solid var(--seal); opacity:.7;
+  }
+  .seal-mark span{
+    font-family:"Noto Serif TC",serif; font-weight:700; font-size:22px;
+    color:var(--seal);
+  }
+  .brand-text h1{ font-size:21px; color:var(--paper-1); font-weight:700; }
+  .brand-text p{ margin:4px 0 0; font-size:12.5px; color:#c9cdd6; letter-spacing:.02em; }
+  .demo-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--seal-soft); color:var(--seal-ink);
+    border:1px solid var(--seal); border-radius:999px;
+    padding:6px 12px; font-size:12px; font-weight:600; white-space:nowrap;
+    align-self:flex-start;
+  }
+  .demo-badge::before{ content:"●"; font-size:8px; color:var(--seal); }
+
+  .top-controls{ display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+  .admin-switch{
+    display:flex; align-items:center; gap:8px; font-size:12.5px; color:#d9dce2;
+  }
+  .switch{
+    width:38px; height:22px; border-radius:999px; background:#3b4552;
+    position:relative; cursor:pointer; border:1px solid #4c5866; flex:none;
+  }
+  .switch::after{
+    content:""; position:absolute; top:2px; left:2px; width:16px; height:16px;
+    border-radius:50%; background:#e9e6da; transition:transform .15s ease;
+  }
+  .switch[aria-checked="true"]{ background:var(--seal); border-color:var(--seal); }
+  .switch[aria-checked="true"]::after{ transform:translateX(16px); background:#fff; }
+  #resetDemoBtn{
+    background:transparent; border:1px solid #4c5866; color:#d9dce2;
+    border-radius:6px; padding:5px 10px; font-size:12px; cursor:pointer;
+  }
+  #resetDemoBtn:hover{ border-color:#8b93a0; }
+
+  /* ---------- layout ---------- */
+  main.layout{
+    display:grid; grid-template-columns: 1fr 320px; gap:22px;
+    margin-top:22px; align-items:start;
+  }
+  .card{
+    background:var(--paper-1); border:1px solid var(--line-hair);
+    border-radius:10px; box-shadow:var(--shadow);
+  }
+  .board-card{ padding:20px 22px 22px; }
+  .board-head{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; flex-wrap:wrap; margin-bottom:16px;
+  }
+  .board-head h2{ font-size:18px; }
+  .board-head .count{ color:var(--ink-400); font-size:12.5px; font-weight:500; }
+
+  .btn{
+    border:none; border-radius:7px; padding:9px 16px; font-size:13.5px;
+    font-weight:600; cursor:pointer; transition:filter .12s ease;
+  }
+  .btn:hover{ filter:brightness(1.06); }
+  .btn:active{ filter:brightness(.94); }
+  .btn-seal{ background:var(--seal); color:#fff; }
+  .btn-ghost{
+    background:transparent; color:var(--ink-700); border:1px solid var(--line-hair);
+  }
+  .btn-ghost:hover{ border-color:var(--ink-400); }
+  .btn-sm{ padding:5px 10px; font-size:12px; border-radius:6px; }
+
+  /* ---------- form ---------- */
+  form.request-form{
+    border:1px dashed var(--line-hair); border-radius:9px;
+    padding:18px; margin-bottom:20px; background:var(--paper-2);
+  }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px 18px; }
+  .field label{
+    display:block; font-size:12px; color:var(--ink-700); margin-bottom:5px;
+    font-weight:600; letter-spacing:.01em;
+  }
+  .field input, .field select, .field textarea{
+    width:100%; padding:8px 10px; border:1px solid var(--line-hair);
+    border-radius:6px; background:var(--paper-1); color:var(--ink-900);
+  }
+  .field input::placeholder, .field textarea::placeholder{ color:var(--ink-400); }
+  .field textarea{ min-height:56px; resize:vertical; }
+  .field-full{ grid-column:1 / -1; }
+  .form-actions{
+    display:flex; align-items:center; gap:12px; margin-top:16px;
+  }
+  .form-msg{ font-size:12.5px; font-weight:600; }
+  .form-msg.ok{ color:var(--ok); }
+  .form-msg.err{ color:var(--seal); }
+
+  /* ---------- filters ---------- */
+  .filters{
+    display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;
+    padding-bottom:16px; border-bottom:1px solid var(--line-hair);
+  }
+  .filters input, .filters select{
+    padding:7px 10px; border:1px solid var(--line-hair); border-radius:6px;
+    background:var(--paper-1); color:var(--ink-900); font-size:12.5px;
+  }
+  .filters label.chk{
+    display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-700);
+  }
+
+  /* ---------- table ---------- */
+  .table-wrap{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  thead th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--ink-400); font-weight:700; padding:0 8px 10px; white-space:nowrap;
+  }
+  tbody td{
+    padding:12px 8px; border-top:1px solid var(--line-hair); vertical-align:top;
+  }
+  tbody tr:hover td{ background:var(--paper-2); }
+  .brand-cell{ font-weight:600; }
+  .muted{ color:var(--ink-400); }
+  .pill{
+    display:inline-block; padding:2px 9px; border-radius:999px;
+    font-size:11px; font-weight:700; white-space:nowrap;
+  }
+  .pill-type{ background:var(--paper-2); border:1px solid var(--line-hair); color:var(--ink-700); }
+  .pill-hidden{ background:var(--warn-soft); color:var(--warn); }
+  .budget{ font-weight:600; white-space:nowrap; }
+  .contact-cell{ display:flex; flex-direction:column; gap:5px; align-items:flex-start; }
+  .line-btn{
+    display:inline-flex; align-items:center; gap:5px;
+    background:var(--line-green); color:#08321a; font-weight:700;
+    padding:4px 11px; border-radius:999px; text-decoration:none; font-size:11.5px;
+    white-space:nowrap;
+  }
+  .line-btn::before{ content:"L"; font-family:"Noto Serif TC",serif; }
+  .phone-link{ font-size:12px; color:var(--ink-700); text-decoration:none; }
+  .phone-link:hover{ text-decoration:underline; }
+  .row-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .empty{ padding:26px 4px; text-align:center; color:var(--ink-400); font-size:13.5px; }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{ display:flex; flex-direction:column; gap:16px; position:sticky; top:16px; }
+  .sidebar h2{ font-size:14.5px; padding:16px 16px 0; }
+  .ad-list{ display:flex; flex-direction:column; gap:12px; padding:12px 16px 16px; }
+  .ad-card{ display:block; border:1px solid var(--line-hair); border-radius:8px; overflow:hidden; text-decoration:none; }
+  .ad-card img{ width:100%; display:block; height:110px; object-fit:cover; }
+  .ad-caption{ padding:8px 10px; font-size:12px; color:var(--ink-700); }
+  .ad-caption b{ color:var(--ink-900); }
+  .ad-empty{ font-size:12.5px; color:var(--ink-400); padding:4px 16px 16px; }
+
+  .admin-panel{ border-top:1px solid var(--line-hair); padding:16px; }
+  .admin-panel h3{ font-size:13px; margin-bottom:10px; }
+  .ad-form{ display:flex; flex-direction:column; gap:7px; }
+  .ad-form input, .ad-form select{
+    padding:7px 9px; border:1px solid var(--line-hair); border-radius:6px;
+    background:var(--paper-2); color:var(--ink-900); font-size:12px;
+  }
+  .ad-form .row{ display:flex; gap:6px; }
+  .ad-admin-list{ margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+  .ad-admin-item{ border:1px solid var(--line-hair); border-radius:7px; padding:9px; font-size:12px; background:var(--paper-2); }
+  .ad-admin-item .meta{ color:var(--ink-400); margin:4px 0 6px; }
+
+  .note{
+    font-size:12px; color:var(--ink-400); margin-top:22px; line-height:1.7;
+    border-top:1px solid var(--line-hair); padding-top:14px;
+  }
+
+  [hidden]{ display:none !important; }
+
+  @media (max-width:900px){
+    main.layout{ grid-template-columns:1fr; }
+    .grid2{ grid-template-columns:1fr; }
+    .sidebar{ position:static; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="skin">
+  <header class="top">
+    <div class="top-inner">
+      <div class="brand">
+        <div class="seal-mark"><span>合</span></div>
+        <div class="brand-text">
+          <h1>相信共好大聯盟</h1>
+          <p>買方客需媒合看板</p>
+        </div>
+      </div>
+      <div class="top-controls">
+        <span class="demo-badge">第一版示範・資料只存在您的瀏覽器</span>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <label class="admin-switch">
+            管理模式
+            <span class="switch" id="adminSwitch" role="switch" tabindex="0" aria-checked="false"></span>
+          </label>
+          <button id="resetDemoBtn" type="button">重設示範資料</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="card board-card">
+      <div class="board-head">
+        <div>
+          <h2>買方客需總表</h2>
+          <div class="count" id="resultCount"></div>
+        </div>
+        <button class="btn btn-seal" id="toggleFormBtn" type="button">＋ 刊登客需</button>
+      </div>
+
+      <form id="requestForm" class="request-form" hidden>
+        <div class="grid2">
+          <div class="field">
+            <label for="f-agentBrand">經紀人品牌名稱 *</label>
+            <input id="f-agentBrand" name="agentBrand" required placeholder="例：陽光地產 信義店">
+          </div>
+          <div class="field">
+            <label for="f-agentPhone">聯絡手機 *</label>
+            <input id="f-agentPhone" name="agentPhone" required placeholder="0912345678">
+          </div>
+          <div class="field">
+            <label for="f-agentLine">LINE（ID 或個人連結）</label>
+            <input id="f-agentLine" name="agentLine" placeholder="https://line.me/ti/p/xxxxx 或 LINE ID">
+          </div>
+          <div class="field">
+            <label for="f-clientCode">客戶代號</label>
+            <input id="f-clientCode" name="clientCode" placeholder="例：A-0231（請勿填真實姓名）">
+          </div>
+          <div class="field">
+            <label for="f-district">行政區 *</label>
+            <input id="f-district" name="district" required placeholder="例：大安區">
+          </div>
+          <div class="field">
+            <label for="f-propertyType">類型 *</label>
+            <select id="f-propertyType" name="propertyType" required>
+              <option value="">請選擇</option>
+              <option>電梯大樓</option>
+              <option>華廈</option>
+              <option>公寓</option>
+              <option>透天</option>
+              <option>店面</option>
+              <option>土地</option>
+              <option>廠辦</option>
+              <option>其他</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-budgetMin">總價預算下限（萬）</label>
+            <input id="f-budgetMin" name="budgetMin" type="number" min="0" placeholder="例：1500">
+          </div>
+          <div class="field">
+            <label for="f-budgetMax">總價預算上限（萬）</label>
+            <input id="f-budgetMax" name="budgetMax" type="number" min="0" placeholder="例：2000">
+          </div>
+          <div class="field field-full">
+            <label for="f-conditions">條件</label>
+            <textarea id="f-conditions" name="conditions" placeholder="例：3房2廳、屋齡15年內、近捷運"></textarea>
+          </div>
+          <div class="field field-full">
+            <label for="f-remark">備注</label>
+            <textarea id="f-remark" name="remark" placeholder="其他補充說明"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-seal" type="submit">送出刊登</button>
+          <button class="btn btn-ghost" type="button" id="cancelFormBtn">取消</button>
+          <span id="formMsg" class="form-msg"></span>
+        </div>
+      </form>
+
+      <div class="filters">
+        <input id="fDistrict" placeholder="行政區">
+        <select id="fType">
+          <option value="">全部類型</option>
+          <option>電梯大樓</option>
+          <option>華廈</option>
+          <option>公寓</option>
+          <option>透天</option>
+          <option>店面</option>
+          <option>土地</option>
+          <option>廠辦</option>
+          <option>其他</option>
+        </select>
+        <input id="fMinBudget" type="number" min="0" placeholder="預算下限(萬)">
+        <input id="fMaxBudget" type="number" min="0" placeholder="預算上限(萬)">
+        <input id="fKeyword" placeholder="關鍵字（品牌/代號/條件/備注）">
+        <button class="btn btn-ghost btn-sm" id="filterBtn" type="button">篩選</button>
+        <button class="btn btn-ghost btn-sm" id="resetFilterBtn" type="button">重設</button>
+        <label class="chk admin-only" id="showHiddenWrap" hidden>
+          <input type="checkbox" id="showHidden"> 顯示已下架
+        </label>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>品牌</th>
+              <th>客戶代號</th>
+              <th>行政區</th>
+              <th>類型</th>
+              <th>總價預算(萬)</th>
+              <th>條件</th>
+              <th>備注</th>
+              <th>刊登時間</th>
+              <th>聯絡</th>
+              <th class="admin-only" hidden>管理</th>
+            </tr>
+          </thead>
+          <tbody id="requestTbody"></tbody>
+        </table>
+        <p id="emptyMsg" class="empty" hidden>目前沒有符合條件的客需刊登。</p>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="card">
+        <h2>贊助廣告</h2>
+        <div id="adList" class="ad-list"></div>
+      </div>
+
+      <div class="card admin-panel admin-only" id="adAdminCard" hidden>
+        <h3>廣告版位管理</h3>
+        <form id="adForm" class="ad-form">
+          <input name="title" placeholder="廣告名稱 *" required>
+          <input name="sponsor" placeholder="贊助商">
+          <input name="linkUrl" placeholder="點擊導向連結">
+          <div class="row">
+            <input name="position" type="number" min="1" placeholder="排序" style="width:70px">
+            <select name="status">
+              <option value="active">上架</option>
+              <option value="inactive">下架</option>
+            </select>
+            <select name="paidStatus">
+              <option value="unpaid">未收費</option>
+              <option value="paid">已收費</option>
+            </select>
+          </div>
+          <button class="btn btn-seal btn-sm" type="submit">新增廣告（demo 圖片自動產生）</button>
+        </form>
+        <div id="adAdminList" class="ad-admin-list"></div>
+      </div>
+    </aside>
+  </main>
+
+  <p class="note">
+    這是「相信共好大聯盟買方客需媒合看板」的第一版可互動示範：表單、篩選、LINE 一鍵聯絡、
+    廣告版位與後台管理都可以實際操作，但所有資料只存在您目前這個瀏覽器（localStorage），
+    重新整理不會消失，換裝置或清除瀏覽器資料則會回到初始示範內容。正式版會改為連到伺服器
+    資料庫，讓所有房仲與買家看到同一份總表。示範中的 LINE 連結為假資料，請勿實際點擊聯絡。
+  </p>
+</div>
+
+<script>
+(function(){
+  var LS_REQUESTS = 'cohou_demo_buyerRequests_v1';
+  var LS_ADS = 'cohou_demo_ads_v1';
+  var LS_ADMIN = 'cohou_demo_admin_v1';
+
+  function uid(prefix){
+    return prefix + '_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  }
+
+  function adPlaceholder(title, bg, fg){
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180">'
+      + '<rect width="320" height="180" fill="' + bg + '"/>'
+      + '<text x="20" y="95" font-family="Noto Sans TC, sans-serif" font-size="22" font-weight="700" fill="' + fg + '">' + title + '</text>'
+      + '<text x="20" y="125" font-family="Noto Sans TC, sans-serif" font-size="13" fill="' + fg + '" opacity="0.8">相信共好大聯盟合作刊登</text>'
+      + '</svg>';
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
+  function seedRequests(){
+    var now = Date.now();
+    return [
+      {
+        id: uid('br'), agentBrand:'陽光地產 信義店', agentPhone:'0912345678',
+        agentLine:'demo-sunny', clientCode:'A-0231', district:'大安區', propertyType:'電梯大樓',
+        budgetMin:1500, budgetMax:2000, conditions:'3房2廳、屋齡15年內、近捷運',
+        remark:'可全現金交易，配合度高', status:'published',
+        createdAt:new Date(now - 3600e3).toISOString(), updatedAt:new Date(now - 3600e3).toISOString()
+      },
+      {
+        id: uid('br'), agentBrand:'共好家居 中山所', agentPhone:'0922333444',
+        agentLine:'demo-gonghao', clientCode:'B-0102', district:'中山區', propertyType:'華廈',
+        budgetMin:900, budgetMax:1200, conditions:'2房1廳、頂加尤佳、可養寵物',
+        remark:'', status:'published',
+        createdAt:new Date(now - 86400e3).toISOString(), updatedAt:new Date(now - 86400e3).toISOString()
+      },
+      {
+        id: uid('br'), agentBrand:'誠信房屋 板橋所', agentPhone:'0933555666',
+        agentLine:'', clientCode:'C-0087', district:'板橋區', propertyType:'店面',
+        budgetMin:null, budgetMax:3000, conditions:'一樓店面、人流量大、可作餐飲',
+        remark:'投資置產用，時間彈性', status:'published',
+        createdAt:new Date(now - 2*86400e3).toISOString(), updatedAt:new Date(now - 2*86400e3).toISOString()
+      }
+    ];
+  }
+
+  function seedAds(){
+    return [
+      { id: uid('ad'), title:'河岸新境 預售新案', sponsor:'翠堤建設', imageUrl: adPlaceholder('河岸新境 預售新案','#a6312c','#fbfaf4'),
+        linkUrl:'', position:1, paidStatus:'paid', status:'active', impressions:0, clicks:0, createdAt:new Date().toISOString() },
+      { id: uid('ad'), title:'房貸試算・低利方案', sponsor:'共好金融', imageUrl: adPlaceholder('房貸試算・低利方案','#2f6fa6','#fbfaf4'),
+        linkUrl:'', position:2, paidStatus:'unpaid', status:'active', impressions:0, clicks:0, createdAt:new Date().toISOString() }
+    ];
+  }
+
+  function load(key, fallback){
+    try{
+      var raw = localStorage.getItem(key);
+      if(!raw) return fallback();
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : fallback();
+    }catch(e){ return fallback(); }
+  }
+  function save(key, val){
+    try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){}
+  }
+  function loadAdmin(){
+    try{ return localStorage.getItem(LS_ADMIN) === '1'; }catch(e){ return false; }
+  }
+  function saveAdmin(v){
+    try{ localStorage.setItem(LS_ADMIN, v ? '1' : '0'); }catch(e){}
+  }
+
+  var state = {
+    requests: load(LS_REQUESTS, seedRequests),
+    ads: load(LS_ADS, seedAds),
+    admin: loadAdmin()
+  };
+  if(!localStorage.getItem(LS_REQUESTS)) save(LS_REQUESTS, state.requests);
+  if(!localStorage.getItem(LS_ADS)) save(LS_ADS, state.ads);
+
+  function persistRequests(){ save(LS_REQUESTS, state.requests); }
+  function persistAds(){ save(LS_ADS, state.ads); }
+
+  function escapeHtml(str){
+    return String(str == null ? '' : str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function lineUrl(v){
+    v = String(v || '').trim();
+    if(!v) return '';
+    if(/^https?:\/\//i.test(v)) return v;
+    return 'https://line.me/ti/p/~' + encodeURIComponent(v);
+  }
+  function formatBudget(min, max){
+    if(min == null && max == null) return '面議';
+    if(min != null && max != null) return min + ' ~ ' + max;
+    if(min != null) return min + ' 以上';
+    return max + ' 以下';
+  }
+
+  var el = {};
+  ['toggleFormBtn','requestForm','cancelFormBtn','formMsg',
+   'fDistrict','fType','fMinBudget','fMaxBudget','fKeyword','filterBtn','resetFilterBtn',
+   'showHiddenWrap','showHidden','requestTbody','emptyMsg','resultCount',
+   'adList','adAdminCard','adForm','adAdminList','adminSwitch','resetDemoBtn'
+  ].forEach(function(id){ el[id] = document.getElementById(id); });
+
+  function applyAdminVisibility(){
+    document.querySelectorAll('.admin-only').forEach(function(node){ node.hidden = !state.admin; });
+    el.adminSwitch.setAttribute('aria-checked', state.admin ? 'true' : 'false');
+  }
+
+  function buildFiltered(){
+    var list = state.requests.slice();
+    var showHidden = state.admin && el.showHidden.checked;
+    if(!showHidden) list = list.filter(function(r){ return r.status !== 'hidden'; });
+
+    var district = el.fDistrict.value.trim();
+    var type = el.fType.value;
+    var minB = el.fMinBudget.value === '' ? null : Number(el.fMinBudget.value);
+    var maxB = el.fMaxBudget.value === '' ? null : Number(el.fMaxBudget.value);
+    var kw = el.fKeyword.value.trim().toLowerCase();
+
+    if(district) list = list.filter(function(r){ return r.district === district; });
+    if(type) list = list.filter(function(r){ return r.propertyType === type; });
+    if(minB != null) list = list.filter(function(r){ return r.budgetMax == null || r.budgetMax >= minB; });
+    if(maxB != null) list = list.filter(function(r){ return r.budgetMin == null || r.budgetMin <= maxB; });
+    if(kw){
+      list = list.filter(function(r){
+        return [r.agentBrand, r.clientCode, r.conditions, r.remark]
+          .filter(Boolean).some(function(f){ return f.toLowerCase().indexOf(kw) !== -1; });
+      });
+    }
+    list.sort(function(a,b){ return new Date(b.createdAt) - new Date(a.createdAt); });
+    return list;
+  }
+
+  function renderRequests(){
+    applyAdminVisibility();
+    var list = buildFiltered();
+    el.resultCount.textContent = '共 ' + list.length + ' 筆';
+    el.requestTbody.innerHTML = '';
+    el.emptyMsg.hidden = list.length !== 0;
+
+    list.forEach(function(item){
+      var tr = document.createElement('tr');
+      var line = lineUrl(item.agentLine);
+      tr.innerHTML =
+        '<td class="brand-cell">' + escapeHtml(item.agentBrand) +
+          (item.status === 'hidden' ? ' <span class="pill pill-hidden">已下架</span>' : '') + '</td>' +
+        '<td>' + (item.clientCode ? escapeHtml(item.clientCode) : '<span class="muted">—</span>') + '</td>' +
+        '<td>' + escapeHtml(item.district) + '</td>' +
+        '<td><span class="pill pill-type">' + escapeHtml(item.propertyType) + '</span></td>' +
+        '<td class="budget">' + escapeHtml(formatBudget(item.budgetMin, item.budgetMax)) + '</td>' +
+        '<td>' + (item.conditions ? escapeHtml(item.conditions) : '<span class="muted">—</span>') + '</td>' +
+        '<td>' + (item.remark ? escapeHtml(item.remark) : '<span class="muted">—</span>') + '</td>' +
+        '<td class="muted">' + new Date(item.createdAt).toLocaleDateString('zh-TW') + '</td>' +
+        '<td class="contact-cell">' +
+          (line ? '<a class="line-btn" href="' + line + '" target="_blank" rel="noopener">LINE聯絡</a>' : '') +
+          '<a class="phone-link" href="tel:' + escapeHtml(item.agentPhone) + '">' + escapeHtml(item.agentPhone) + '</a>' +
+        '</td>' +
+        '<td class="admin-only row-actions" ' + (state.admin ? '' : 'hidden') + '>' +
+          '<button class="btn btn-ghost btn-sm" data-act="toggle" data-id="' + item.id + '" data-status="' + item.status + '">' +
+            (item.status === 'hidden' ? '上架' : '下架') + '</button>' +
+          '<button class="btn btn-ghost btn-sm" data-act="delete" data-id="' + item.id + '">刪除</button>' +
+        '</td>';
+      el.requestTbody.appendChild(tr);
+    });
+
+    el.requestTbody.querySelectorAll('[data-act="toggle"]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var item = state.requests.find(function(r){ return r.id === btn.dataset.id; });
+        if(!item) return;
+        item.status = item.status === 'hidden' ? 'published' : 'hidden';
+        item.updatedAt = new Date().toISOString();
+        persistRequests(); renderRequests();
+      });
+    });
+    el.requestTbody.querySelectorAll('[data-act="delete"]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if(!confirm('確定要刪除這筆客需刊登嗎？（此為示範資料）')) return;
+        state.requests = state.requests.filter(function(r){ return r.id !== btn.dataset.id; });
+        persistRequests(); renderRequests();
+      });
+    });
+  }
+
+  function renderAds(){
+    var active = state.ads.filter(function(a){ return a.status === 'active'; })
+      .sort(function(a,b){ return (a.position||999) - (b.position||999); });
+    el.adList.innerHTML = '';
+    if(active.length === 0){
+      el.adList.innerHTML = '<p class="ad-empty">目前尚無廣告刊登。</p>';
+      return;
+    }
+    active.forEach(function(ad){
+      var a = document.createElement('a');
+      a.className = 'ad-card';
+      a.href = ad.linkUrl || '#';
+      a.target = ad.linkUrl ? '_blank' : '_self';
+      a.rel = 'noopener';
+      a.innerHTML = '<img src="' + ad.imageUrl + '" alt="' + escapeHtml(ad.title) + '">' +
+        '<div class="ad-caption"><b>' + escapeHtml(ad.title) + '</b>' + (ad.sponsor ? ' · ' + escapeHtml(ad.sponsor) : '') + '</div>';
+      a.addEventListener('click', function(){
+        ad.clicks = (ad.clicks || 0) + 1;
+        persistAds();
+      });
+      el.adList.appendChild(a);
+    });
+  }
+
+  function renderAdAdmin(){
+    if(!state.admin){ el.adAdminList.innerHTML = ''; return; }
+    var list = state.ads.slice().sort(function(a,b){ return (a.position||999) - (b.position||999); });
+    el.adAdminList.innerHTML = '';
+    if(list.length === 0){
+      el.adAdminList.innerHTML = '<p class="ad-empty">尚未新增任何廣告。</p>';
+      return;
+    }
+    list.forEach(function(ad){
+      var div = document.createElement('div');
+      div.className = 'ad-admin-item';
+      div.innerHTML =
+        '<b>' + escapeHtml(ad.title) + '</b>（排序 ' + ad.position + '）' +
+        '<div class="meta">贊助：' + (escapeHtml(ad.sponsor) || '—') +
+          '　曝光 ' + (ad.impressions||0) + ' / 點擊 ' + (ad.clicks||0) + '</div>' +
+        '<div class="meta">狀態：' + (ad.status === 'active' ? '上架中' : '已下架') +
+          '　收費：' + (ad.paidStatus === 'paid' ? '已收費' : '未收費') + '</div>' +
+        '<div class="row-actions">' +
+          '<button class="btn btn-ghost btn-sm" data-act="ad-status" data-id="' + ad.id + '">' +
+            (ad.status === 'active' ? '下架' : '上架') + '</button>' +
+          '<button class="btn btn-ghost btn-sm" data-act="ad-paid" data-id="' + ad.id + '">' +
+            (ad.paidStatus === 'paid' ? '標記未收費' : '標記已收費') + '</button>' +
+          '<button class="btn btn-ghost btn-sm" data-act="ad-delete" data-id="' + ad.id + '">刪除</button>' +
+        '</div>';
+      el.adAdminList.appendChild(div);
+    });
+    el.adAdminList.querySelectorAll('[data-act="ad-status"]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var ad = state.ads.find(function(a){ return a.id === btn.dataset.id; });
+        ad.status = ad.status === 'active' ? 'inactive' : 'active';
+        persistAds(); renderAdAdmin(); renderAds();
+      });
+    });
+    el.adAdminList.querySelectorAll('[data-act="ad-paid"]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var ad = state.ads.find(function(a){ return a.id === btn.dataset.id; });
+        ad.paidStatus = ad.paidStatus === 'paid' ? 'unpaid' : 'paid';
+        persistAds(); renderAdAdmin();
+      });
+    });
+    el.adAdminList.querySelectorAll('[data-act="ad-delete"]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if(!confirm('確定要刪除這則廣告嗎？')) return;
+        state.ads = state.ads.filter(function(a){ return a.id !== btn.dataset.id; });
+        persistAds(); renderAdAdmin(); renderAds();
+      });
+    });
+  }
+
+  // ---- events ----
+  el.toggleFormBtn.addEventListener('click', function(){
+    el.requestForm.hidden = !el.requestForm.hidden;
+  });
+  el.cancelFormBtn.addEventListener('click', function(){
+    el.requestForm.hidden = true;
+    el.requestForm.reset();
+  });
+
+  el.requestForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    el.formMsg.textContent = '';
+    el.formMsg.className = 'form-msg';
+    var fd = new FormData(el.requestForm);
+    var agentBrand = (fd.get('agentBrand')||'').trim();
+    var agentPhone = (fd.get('agentPhone')||'').trim();
+    var district = (fd.get('district')||'').trim();
+    var propertyType = (fd.get('propertyType')||'').trim();
+    if(!agentBrand || !agentPhone || !district || !propertyType){
+      el.formMsg.textContent = '請填寫所有必填欄位（品牌名稱、手機、行政區、類型）';
+      el.formMsg.classList.add('err');
+      return;
+    }
+    var now = new Date().toISOString();
+    var item = {
+      id: uid('br'),
+      agentBrand: agentBrand,
+      agentPhone: agentPhone,
+      agentLine: (fd.get('agentLine')||'').trim(),
+      clientCode: (fd.get('clientCode')||'').trim(),
+      district: district,
+      propertyType: propertyType,
+      budgetMin: fd.get('budgetMin') ? Number(fd.get('budgetMin')) : null,
+      budgetMax: fd.get('budgetMax') ? Number(fd.get('budgetMax')) : null,
+      conditions: (fd.get('conditions')||'').trim(),
+      remark: (fd.get('remark')||'').trim(),
+      status: 'published',
+      createdAt: now, updatedAt: now
+    };
+    state.requests.push(item);
+    persistRequests();
+    renderRequests();
+    el.formMsg.textContent = '刊登成功！已出現在下方總表。';
+    el.formMsg.classList.add('ok');
+    el.requestForm.reset();
+    setTimeout(function(){
+      el.requestForm.hidden = true;
+      el.formMsg.textContent = '';
+      el.formMsg.className = 'form-msg';
+    }, 2000);
+  });
+
+  el.filterBtn.addEventListener('click', renderRequests);
+  el.resetFilterBtn.addEventListener('click', function(){
+    ['fDistrict','fType','fMinBudget','fMaxBudget','fKeyword'].forEach(function(id){ el[id].value = ''; });
+    renderRequests();
+  });
+  el.showHidden.addEventListener('change', renderRequests);
+
+  el.adForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var fd = new FormData(el.adForm);
+    var title = (fd.get('title')||'').trim();
+    if(!title) return;
+    var colors = ['#a6312c','#2f6fa6','#2f7d5b','#a6721a'];
+    var color = colors[state.ads.length % colors.length];
+    var ad = {
+      id: uid('ad'), title: title,
+      sponsor: (fd.get('sponsor')||'').trim(),
+      imageUrl: adPlaceholder(title, color, '#fbfaf4'),
+      linkUrl: (fd.get('linkUrl')||'').trim(),
+      position: fd.get('position') ? Number(fd.get('position')) : state.ads.length + 1,
+      status: fd.get('status') || 'active',
+      paidStatus: fd.get('paidStatus') || 'unpaid',
+      impressions: 0, clicks: 0, createdAt: new Date().toISOString()
+    };
+    state.ads.push(ad);
+    persistAds();
+    el.adForm.reset();
+    renderAdAdmin(); renderAds();
+  });
+
+  function setAdmin(v){
+    state.admin = v;
+    saveAdmin(v);
+    renderRequests(); renderAds(); renderAdAdmin();
+  }
+  el.adminSwitch.addEventListener('click', function(){ setAdmin(!state.admin); });
+  el.adminSwitch.addEventListener('keydown', function(e){
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); setAdmin(!state.admin); }
+  });
+
+  el.resetDemoBtn.addEventListener('click', function(){
+    if(!confirm('確定要清除示範資料並還原成初始範例嗎？')) return;
+    state.requests = seedRequests();
+    state.ads = seedAds();
+    persistRequests(); persistAds();
+    renderRequests(); renderAds(); renderAdAdmin();
+  });
+
+  renderRequests();
+  renderAds();
+  renderAdAdmin();
+})();
+</script>
+</body>
+</html>

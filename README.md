@@ -207,6 +207,13 @@ MVP 可行性分析、資料模型與 API 設計見 [`docs/buyer-demand-board.md
 `/api/ads/:id/click` 記錄點擊），資料同樣存在 `data/db.json` 的
 `buyerRequests` 與 `ads` 兩個陣列。
 
+### 純前端 Demo（可部署到 Cloudflare Pages）
+
+`cf-pages/buyer-board-demo/` 是同一份看板的純前端示範版（無後端、資料存
+localStorage），可以直接部署到 Cloudflare Pages 讓大家快速點開測試操作流程，
+部署步驟見 [`cf-pages/README.md`](cf-pages/README.md)。注意這只是展示用，正式
+多人共用的版本仍是上面的 `public/buyer-board.html` + Node/Express 後端。
+
 ## 七、可以延伸的方向
 
 - 目前的資料庫是單一 JSON 檔，適合單機/小規模使用；群組與新聞量再擴大，
