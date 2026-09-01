@@ -151,12 +151,87 @@ document.getElementById('toggleFormBtn').addEventListener('click', () => {
   form.hidden = !form.hidden;
 });
 
+// ---------- 刊登前手機驗證 ----------
+
+const phoneState = { verified: false, verifiedPhone: '' };
+
+const agentPhoneInput = document.getElementById('agentPhoneInput');
+const sendCodeBtn = document.getElementById('sendCodeBtn');
+const codeWrap = document.getElementById('codeWrap');
+const verifyCodeInput = document.getElementById('verifyCodeInput');
+const confirmCodeBtn = document.getElementById('confirmCodeBtn');
+const verifyStatus = document.getElementById('verifyStatus');
+const submitRequestBtn = document.getElementById('submitRequestBtn');
+
+function setVerifyStatus(text, cls) {
+  verifyStatus.textContent = text;
+  verifyStatus.className = 'verify-status' + (cls ? ' ' + cls : '');
+}
+
+function resetVerification() {
+  phoneState.verified = false;
+  phoneState.verifiedPhone = '';
+  submitRequestBtn.disabled = true;
+  setVerifyStatus('尚未驗證手機門號，請先發送並輸入驗證碼');
+}
+
+agentPhoneInput.addEventListener('input', () => {
+  if (agentPhoneInput.value.trim() !== phoneState.verifiedPhone) resetVerification();
+});
+
+sendCodeBtn.addEventListener('click', async () => {
+  const phone = agentPhoneInput.value.trim();
+  if (!/^09\d{8}$/.test(phone)) {
+    setVerifyStatus('請輸入正確的手機格式（09 開頭共 10 碼）', 'error');
+    return;
+  }
+  sendCodeBtn.disabled = true;
+  try {
+    const result = await api('/api/verify/send', { method: 'POST', body: JSON.stringify({ phone }) });
+    codeWrap.hidden = false;
+    if (result.devCode) {
+      verifyCodeInput.value = result.devCode;
+      setVerifyStatus(`驗證碼已產生（測試模式尚未串接簡訊商，已自動帶入：${result.devCode}）`, 'ok');
+    } else {
+      setVerifyStatus('驗證碼已發送至該手機，請查收簡訊', 'ok');
+    }
+  } catch (err) {
+    setVerifyStatus('發送失敗：' + err.message, 'error');
+  } finally {
+    setTimeout(() => {
+      sendCodeBtn.disabled = false;
+    }, 3000);
+  }
+});
+
+confirmCodeBtn.addEventListener('click', async () => {
+  const phone = agentPhoneInput.value.trim();
+  const code = verifyCodeInput.value.trim();
+  try {
+    await api('/api/verify/confirm', { method: 'POST', body: JSON.stringify({ phone, code }) });
+    phoneState.verified = true;
+    phoneState.verifiedPhone = phone;
+    submitRequestBtn.disabled = false;
+    setVerifyStatus('手機驗證成功 ✓，可以送出刊登了', 'ok');
+  } catch (err) {
+    setVerifyStatus('驗證失敗：' + err.message, 'error');
+  }
+});
+
+resetVerification();
+
 document.getElementById('requestForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const form = e.target;
   const msg = document.getElementById('formMsg');
   msg.textContent = '';
   msg.className = 'form-msg';
+
+  if (!phoneState.verified || phoneState.verifiedPhone !== agentPhoneInput.value.trim()) {
+    msg.textContent = '請先完成手機門號驗證';
+    msg.classList.add('error');
+    return;
+  }
 
   const payload = Object.fromEntries(new FormData(form).entries());
 
@@ -165,8 +240,15 @@ document.getElementById('requestForm').addEventListener('submit', async (e) => {
     msg.textContent = '刊登成功！';
     msg.classList.add('ok');
     form.reset();
-    form.hidden = true;
+    codeWrap.hidden = true;
+    resetVerification();
     loadRequests();
+    // 讓使用者先看到成功訊息，2 秒後再收合表單
+    setTimeout(() => {
+      form.hidden = true;
+      msg.textContent = '';
+      msg.className = 'form-msg';
+    }, 2000);
   } catch (err) {
     msg.textContent = '刊登失敗：' + err.message;
     msg.classList.add('error');

@@ -193,8 +193,12 @@ MVP 可行性分析、資料模型與 API 設計見 [`docs/buyer-demand-board.md
 
 重點：
 
-- **刊登客需**：任何房仲皆可直接送出，不需 `ADMIN_TOKEN`，填品牌名稱、手機、
-  LINE、客戶代號、行政區、類型、總價預算、條件、備注。
+- **手機驗證後才能刊登**：填完表單按「發送驗證碼」，系統寄出 6 碼簡訊驗證碼
+  （5 分鐘有效），輸入正確驗證碼後 30 分鐘內才能送出刊登，避免亂填/灌水資料。
+  尚未設定 `SMS_WEBHOOK_URL` 前是測試模式：驗證碼只記錄在伺服器 log，同時
+  API 會直接回傳驗證碼、前端自動帶入，方便本機測試不用真的收簡訊。
+- **刊登客需**：任何房仲驗證手機後皆可直接送出，不需 `ADMIN_TOKEN`，填品牌
+  名稱、手機、LINE、客戶代號、行政區、類型、總價預算、條件、備注。
 - **總表瀏覽**：下方表格可依行政區/類型/預算區間/關鍵字篩選，每筆刊登都有
   「LINE聯絡」按鈕，一鍵開啟該經紀人的 LINE 對話。
 - **廣告版位**：右側顯示上架中的廣告（依排序、效期自動顯示/下架），管理者
@@ -203,9 +207,11 @@ MVP 可行性分析、資料模型與 API 設計見 [`docs/buyer-demand-board.md
 - **後台管理**：輸入 `ADMIN_TOKEN` 後，客需總表會多出「下架/刪除」按鈕，並可
   勾選「顯示已下架」查看全部歷史刊登。
 
-對應的 API：`/api/buyer-requests`（客需 CRUD）與 `/api/ads`（廣告 CRUD +
-`/api/ads/:id/click` 記錄點擊），資料同樣存在 `data/db.json` 的
-`buyerRequests` 與 `ads` 兩個陣列。
+對應的 API：`/api/verify`（手機驗證碼發送/確認）、`/api/buyer-requests`（客需
+CRUD）與 `/api/ads`（廣告 CRUD + `/api/ads/:id/click` 記錄點擊），資料同樣存
+在 `data/db.json` 的 `phoneVerifications`、`buyerRequests` 與 `ads` 三個陣列。
+正式上線請在 `.env` 設定 `SMS_WEBHOOK_URL`（指向簡訊商的 HTTP API）才會真的
+發送簡訊，否則只供本機測試用。
 
 ## 七、可以延伸的方向
 
