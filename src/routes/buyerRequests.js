@@ -2,7 +2,6 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../store/db');
 const { requireAdmin } = require('../middleware/adminAuth');
-const { isPhoneVerified } = require('../verification/phoneVerification');
 
 const router = express.Router();
 
@@ -70,16 +69,11 @@ router.post('/', (req, res) => {
     return res.status(400).json({ ok: false, error: `缺少必填欄位：${missing.join('、')}` });
   }
 
-  const agentPhone = String(body.agentPhone).trim();
-  if (!isPhoneVerified(agentPhone)) {
-    return res.status(403).json({ ok: false, error: '請先完成手機門號驗證後再刊登' });
-  }
-
   const now = new Date().toISOString();
   const item = {
     id: `br_${crypto.randomUUID()}`,
     agentBrand: String(body.agentBrand).trim(),
-    agentPhone,
+    agentPhone: String(body.agentPhone).trim(),
     agentLine: String(body.agentLine || '').trim(),
     clientCode: String(body.clientCode || '').trim(),
     district: String(body.district).trim(),

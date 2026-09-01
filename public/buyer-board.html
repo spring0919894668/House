@@ -33,16 +33,7 @@
               <input name="agentBrand" required placeholder="例：○○房屋 信義店" />
             </label>
             <label>聯絡手機 *
-              <div class="phone-verify-row">
-                <input id="agentPhoneInput" name="agentPhone" required placeholder="0912345678" />
-                <button type="button" id="sendCodeBtn">發送驗證碼</button>
-              </div>
-            </label>
-            <label id="codeWrap" hidden>手機驗證碼 *
-              <div class="phone-verify-row">
-                <input id="verifyCodeInput" placeholder="6碼驗證碼" maxlength="6" inputmode="numeric" />
-                <button type="button" id="confirmCodeBtn">確認驗證</button>
-              </div>
+              <input name="agentPhone" required placeholder="0912345678" />
             </label>
             <label>LINE（ID 或個人連結）
               <input name="agentLine" placeholder="https://line.me/ti/p/xxxxx 或 LINE ID" />
@@ -73,7 +64,6 @@
               <input name="budgetMax" type="number" min="0" placeholder="例：2000" />
             </label>
           </div>
-          <p id="verifyStatus" class="verify-status">尚未驗證手機門號，請先發送並輸入驗證碼</p>
           <label>條件
             <textarea name="conditions" placeholder="例：3房2廳、屋齡15年內、近捷運"></textarea>
           </label>
@@ -81,7 +71,7 @@
             <textarea name="remark" placeholder="其他補充說明"></textarea>
           </label>
           <div class="row">
-            <button type="submit" id="submitRequestBtn" disabled>送出刊登</button>
+            <button type="submit" id="submitRequestBtn">送出刊登</button>
             <span id="formMsg" class="form-msg"></span>
           </div>
         </form>

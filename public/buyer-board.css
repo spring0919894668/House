@@ -87,28 +87,6 @@
 .form-msg.error { color: #a12626; }
 .form-msg.ok { color: #1a7a34; }
 
-.phone-verify-row { display: flex; gap: 6px; }
-.phone-verify-row input { flex: 1; }
-.phone-verify-row button {
-  flex-shrink: 0;
-  padding: 0 12px;
-  border: 1px solid #3a7afe;
-  border-radius: 4px;
-  background: #fff;
-  color: #3a7afe;
-  cursor: pointer;
-  font-size: 12px;
-  white-space: nowrap;
-}
-.phone-verify-row button:disabled {
-  border-color: #ccc;
-  color: #999;
-  cursor: not-allowed;
-}
-.verify-status { font-size: 12px; color: #888; margin: -4px 0 8px; }
-.verify-status.ok { color: #1a7a34; }
-.verify-status.error { color: #a12626; }
-
 .filter-bar {
   display: flex;
   flex-wrap: wrap;

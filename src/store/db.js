@@ -21,8 +21,7 @@ const DEFAULT_DATA = {
 
   // 買方客需媒合看板（見 docs/buyer-demand-board.md）
   buyerRequests: [], // { id, agentBrand, agentPhone, agentLine, clientCode, district, propertyType, budgetMin, budgetMax, conditions, remark, status: 'published'|'hidden', createdAt, updatedAt }
-  ads: [], // { id, title, imageUrl, linkUrl, sponsor, position, startDate, endDate, paidStatus: 'paid'|'unpaid', status: 'active'|'inactive', impressions, clicks, createdAt }
-  phoneVerifications: [] // { phone, codeHash, expiresAt, attempts, lastSentAt, verified, verifiedUntil }
+  ads: [] // { id, title, imageUrl, linkUrl, sponsor, position, startDate, endDate, paidStatus: 'paid'|'unpaid', status: 'active'|'inactive', impressions, clicks, createdAt }
 };
 
 function ensureFile() {

@@ -8,7 +8,6 @@ const newsRoutes = require('./routes/news');
 const scheduleRoutes = require('./routes/schedule');
 const buyerRequestRoutes = require('./routes/buyerRequests');
 const adRoutes = require('./routes/ads');
-const verifyRoutes = require('./routes/verify');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,7 +25,6 @@ app.use(express.json());
 // requireAdmin 驗證 ADMIN_TOKEN，因此掛載在下方的全站 /api 驗證之前。
 app.use('/api/buyer-requests', buyerRequestRoutes);
 app.use('/api/ads', adRoutes);
-app.use('/api/verify', verifyRoutes);
 
 // 簡易後台驗證：非本機請求需帶 Authorization: Bearer <ADMIN_TOKEN>
 app.use('/api', (req, res, next) => {
