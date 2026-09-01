@@ -6,6 +6,8 @@ const { registerWebhook } = require('./line/webhook');
 const scheduler = require('./scheduler');
 const newsRoutes = require('./routes/news');
 const scheduleRoutes = require('./routes/schedule');
+const buyerRequestRoutes = require('./routes/buyerRequests');
+const adRoutes = require('./routes/ads');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +20,11 @@ for (const botKey of ['A', 'B', 'C', 'D']) {
 }
 
 app.use(express.json());
+
+// 買方客需媒合看板：刊登/瀏覽對所有房仲開放，管理端動作在各路由內自行用
+// requireAdmin 驗證 ADMIN_TOKEN，因此掛載在下方的全站 /api 驗證之前。
+app.use('/api/buyer-requests', buyerRequestRoutes);
+app.use('/api/ads', adRoutes);
 
 // 簡易後台驗證：非本機請求需帶 Authorization: Bearer <ADMIN_TOKEN>
 app.use('/api', (req, res, next) => {

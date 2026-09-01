@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>買方客需媒合看板｜相信共好大聯盟</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="buyer-board.css" />
+</head>
+<body>
+  <header>
+    <h1>買方客需媒合看板｜相信共好大聯盟</h1>
+    <div class="token-box">
+      <label>管理端 Token</label>
+      <input id="adminToken" type="password" placeholder="房仲刊登不需要，僅管理者需要" />
+      <button id="saveToken">儲存</button>
+      <a class="link-btn" href="index.html">新聞助理後台</a>
+    </div>
+  </header>
+
+  <main class="board-main">
+    <section class="board-content">
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>買方客需總表</h2>
+          <button id="toggleFormBtn">＋ 刊登客需</button>
+        </div>
+
+        <form id="requestForm" class="request-form" hidden>
+          <div class="grid2">
+            <label>經紀人品牌名稱 *
+              <input name="agentBrand" required placeholder="例：○○房屋 信義店" />
+            </label>
+            <label>聯絡手機 *
+              <input name="agentPhone" required placeholder="0912345678" />
+            </label>
+            <label>LINE（ID 或個人連結）
+              <input name="agentLine" placeholder="https://line.me/ti/p/xxxxx 或 LINE ID" />
+            </label>
+            <label>客戶代號
+              <input name="clientCode" placeholder="例：A-0231（請勿填真實姓名）" />
+            </label>
+            <label>行政區 *
+              <input name="district" required placeholder="例：大安區" />
+            </label>
+            <label>類型 *
+              <select name="propertyType" required>
+                <option value="">請選擇</option>
+                <option>電梯大樓</option>
+                <option>華廈</option>
+                <option>公寓</option>
+                <option>透天</option>
+                <option>店面</option>
+                <option>土地</option>
+                <option>廠辦</option>
+                <option>其他</option>
+              </select>
+            </label>
+            <label>總價預算下限（萬）
+              <input name="budgetMin" type="number" min="0" placeholder="例：1500" />
+            </label>
+            <label>總價預算上限（萬）
+              <input name="budgetMax" type="number" min="0" placeholder="例：2000" />
+            </label>
+          </div>
+          <label>條件
+            <textarea name="conditions" placeholder="例：3房2廳、屋齡15年內、近捷運"></textarea>
+          </label>
+          <label>備注
+            <textarea name="remark" placeholder="其他補充說明"></textarea>
+          </label>
+          <div class="row">
+            <button type="submit">送出刊登</button>
+            <span id="formMsg" class="form-msg"></span>
+          </div>
+        </form>
+
+        <div class="filter-bar">
+          <input id="fDistrict" placeholder="行政區" />
+          <select id="fType">
+            <option value="">全部類型</option>
+            <option>電梯大樓</option>
+            <option>華廈</option>
+            <option>公寓</option>
+            <option>透天</option>
+            <option>店面</option>
+            <option>土地</option>
+            <option>廠辦</option>
+            <option>其他</option>
+          </select>
+          <input id="fMinBudget" type="number" min="0" placeholder="預算下限(萬)" />
+          <input id="fMaxBudget" type="number" min="0" placeholder="預算上限(萬)" />
+          <input id="fKeyword" placeholder="關鍵字（品牌/代號/條件/備注）" />
+          <button id="filterBtn">篩選</button>
+          <button id="resetFilterBtn">重設</button>
+          <label class="admin-only" id="showHiddenWrap" hidden>
+            <input type="checkbox" id="showHidden" /> 顯示已下架
+          </label>
+        </div>
+
+        <div class="table-wrap">
+          <table id="requestTable">
+            <thead>
+              <tr>
+                <th>品牌</th>
+                <th>客戶代號</th>
+                <th>行政區</th>
+                <th>類型</th>
+                <th>總價預算(萬)</th>
+                <th>條件</th>
+                <th>備注</th>
+                <th>刊登時間</th>
+                <th>聯絡</th>
+                <th class="admin-only" hidden>管理</th>
+              </tr>
+            </thead>
+            <tbody id="requestTbody"></tbody>
+          </table>
+          <p id="emptyMsg" class="empty-msg" hidden>目前沒有符合條件的客需刊登。</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="ad-sidebar">
+      <h2>贊助廣告</h2>
+      <div id="adList" class="ad-list"></div>
+
+      <div id="adAdmin" class="ad-admin admin-only" hidden>
+        <h3>廣告版位管理</h3>
+        <form id="adForm" class="ad-form">
+          <input name="title" placeholder="廣告名稱 *" required />
+          <input name="sponsor" placeholder="贊助商" />
+          <input name="imageUrl" placeholder="圖片網址 *" required />
+          <input name="linkUrl" placeholder="點擊導向連結" />
+          <div class="row">
+            <input name="position" type="number" min="1" placeholder="排序" style="width:70px" />
+            <input name="startDate" type="date" />
+            <input name="endDate" type="date" />
+          </div>
+          <div class="row">
+            <select name="paidStatus">
+              <option value="unpaid">未收費</option>
+              <option value="paid">已收費</option>
+            </select>
+            <select name="status">
+              <option value="active">上架</option>
+              <option value="inactive">下架</option>
+            </select>
+            <button type="submit">新增廣告</button>
+          </div>
+        </form>
+        <div id="adAdminList" class="ad-admin-list"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="buyer-board.js"></script>
+</body>
+</html>
