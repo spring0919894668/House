@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>買方銷售簡報</title>
+<link rel="stylesheet" href="report.css" />
+</head>
+<body>
+  <div class="report-actions no-print">
+    <button onclick="window.print()">列印／匯出 PDF</button>
+  </div>
+  <div id="content" class="report-page">載入中…</div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const caseId = params.get('caseId');
+    const token = localStorage.getItem('matchingToken') || '';
+
+    function money(n) { return n == null ? '—' : Number(n).toLocaleString('zh-Hant-TW'); }
+    function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    async function load() {
+      const box = document.getElementById('content');
+      if (!token || !caseId) {
+        box.innerHTML = '<p>缺少登入權杖或案件編號，請從主頁面點選「買方銷售簡報」連結進入。</p>';
+        return;
+      }
+      try {
+        const res = await fetch(`/api/matching/cases/${caseId}/presentation`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || '讀取失敗');
+        render(data.presentation);
+      } catch (err) {
+        box.innerHTML = `<p>讀取失敗：${esc(err.message)}</p>`;
+      }
+    }
+
+    function render(p) {
+      document.getElementById('content').innerHTML = `
+        <header>
+          <h1>${esc(p.title)}</h1>
+          <p class="subtitle">${esc(p.region)} ・ ${esc(p.propertyType)}</p>
+        </header>
+
+        <section class="highlight-box">
+          <h2>案件亮點</h2>
+          <ul>${p.highlights.map((h) => `<li>${esc(h)}</li>`).join('') || '<li>資料建置中</li>'}</ul>
+        </section>
+
+        <section>
+          <h2>基本資訊</h2>
+          <table>
+            <tr><th>地址</th><td>${esc(p.address || '未提供，實際帶看時確認')}</td></tr>
+            <tr><th>面積</th><td>${p.area} ${esc(p.unit)}</td></tr>
+            <tr><th>開價</th><td>${money(p.askingPrice)} 元${p.unitPrice ? `（約每${esc(p.unit)} ${money(p.unitPrice)} 元）` : ''}</td></tr>
+            <tr><th>產權狀態</th><td>${esc(p.ownershipStatusLabel)}</td></tr>
+            <tr><th>現況</th><td>${esc(p.currentStatusLabel)}${p.currentStatusNote ? '：' + esc(p.currentStatusNote) : ''}</td></tr>
+            <tr><th>帶看紀錄</th><td>累計 ${p.viewingCount} 次</td></tr>
+          </table>
+        </section>
+
+        ${p.recentViewingNotes.length ? `
+        <section>
+          <h2>近期帶看回饋</h2>
+          <ul>${p.recentViewingNotes.map((v) => `<li>${esc(v.date)}：${esc(v.note || '（無備註）')}</li>`).join('')}</ul>
+        </section>` : ''}
+
+        <footer>產出時間：${new Date(p.generatedAt).toLocaleString('zh-Hant-TW')}</footer>
+      `;
+    }
+
+    load();
+  </script>
+</body>
+</html>

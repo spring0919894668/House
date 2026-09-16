@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>工業廠房案件媒合社群</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>工業廠房案件媒合社群</h1>
+    <div id="authBox" class="auth-box">
+      <span id="loginFields">
+        <input id="tokenInput" type="password" placeholder="貼上個人存取權杖 (Token)" />
+        <button id="loginBtn">登入</button>
+      </span>
+      <span id="whoami" class="whoami"></span>
+      <button id="logoutBtn" class="hidden">登出</button>
+    </div>
+  </header>
+
+  <nav id="tabs" class="hidden">
+    <button data-tab="cases" class="active">案件牆</button>
+    <button data-tab="buyerNeeds">客需媒合</button>
+    <button data-tab="users">成員與權限</button>
+    <button data-tab="feedback">意見回饋</button>
+  </nav>
+
+  <main id="app" class="hidden">
+    <section id="view-cases" class="view active">
+      <div class="toolbar">
+        <h2>案件牆</h2>
+        <button id="newCaseBtn">＋ 新增案件</button>
+      </div>
+      <div id="caseList" class="card-grid"></div>
+    </section>
+
+    <section id="view-buyerNeeds" class="view">
+      <div class="toolbar">
+        <h2>買方客需媒合</h2>
+        <button id="newNeedBtn">＋ 張貼客需</button>
+      </div>
+      <div id="needList" class="card-grid"></div>
+    </section>
+
+    <section id="view-users" class="view">
+      <div class="toolbar">
+        <h2>成員與權限管理</h2>
+        <button id="newUserBtn">＋ 新增同事帳號</button>
+      </div>
+      <p class="hint">僅系統管理者可新增／調整同事帳號；案件的檢視／編輯權限則在每個案件詳情頁設定。</p>
+      <div id="userList" class="card-grid"></div>
+    </section>
+
+    <section id="view-feedback" class="view">
+      <div class="toolbar">
+        <h2>意見回饋（管理者彙整）</h2>
+      </div>
+      <p class="hint">同事試用時透過畫面右下角的「💬 意見回饋」按鈕留下的內容都會彙整在這裡，僅系統管理者看得到。</p>
+      <div id="feedbackList"></div>
+    </section>
+  </main>
+
+  <button id="feedbackFab" class="feedback-fab hidden" title="意見回饋">💬 意見回饋</button>
+
+  <div id="modalRoot"></div>
+
+  <p id="loginHint" class="login-hint">
+    尚未登入。請向管理者索取個人存取權杖後貼上並登入。首次啟動系統時，管理者權杖會顯示於伺服器啟動的
+    console 記錄中。
+  </p>
+
+  <script src="app.js"></script>
+</body>
+</html>
