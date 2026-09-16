@@ -30,8 +30,11 @@ const DEFAULT_DATA = {
   buyerNeeds: [], // { id, title, requirement:{ propertyType, region, minArea, maxBudget, note },
                   //   createdBy, status:'open'|'matched'|'closed', createdAt }
 
-  referrals: [] // { id, buyerNeedId, caseId, recommendedBy, note,
-                //   status:'pending'|'accepted'|'rejected', createdAt }
+  referrals: [], // { id, buyerNeedId, caseId, recommendedBy, note,
+                 //   status:'pending'|'accepted'|'rejected', createdAt }
+
+  feedback: [] // { id, authorId, page, rating, content, status:'new'|'reviewed', createdAt }
+                // 讓實際試用的同事在畫面上直接回報問題／建議，供管理者集中檢視。
 };
 
 function ensureFile() {
@@ -68,11 +71,20 @@ function seedAdmin(data) {
   return admin;
 }
 
+// 讓既有的 matching-db.json（可能是舊版、缺少新欄位）在讀取時自動補上
+// DEFAULT_DATA 裡新增的頂層欄位，避免升級後因為某個集合是 undefined 而壞掉。
+function backfillDefaults(data) {
+  for (const key of Object.keys(DEFAULT_DATA)) {
+    if (!(key in data)) data[key] = JSON.parse(JSON.stringify(DEFAULT_DATA[key]));
+  }
+  return data;
+}
+
 function read() {
   ensureFile();
   const raw = fs.readFileSync(DB_FILE, 'utf-8');
   try {
-    return JSON.parse(raw);
+    return backfillDefaults(JSON.parse(raw));
   } catch (err) {
     console.error('[matching-db] JSON 解析失敗，回復為預設資料', err);
     return JSON.parse(JSON.stringify(DEFAULT_DATA));

@@ -13,5 +13,6 @@ router.use('/', require('./discussion')); // /cases/:caseId/comments, /comments/
 router.use('/', require('./priceAnalysis')); // /cases/:id/price-analysis
 router.use('/', require('./reports')); // /cases/:id/presentation, /cases/:id/negotiation-report
 router.use('/buyer-needs', require('./buyerNeeds'));
+router.use('/feedback', require('./feedback'));
 
 module.exports = router;

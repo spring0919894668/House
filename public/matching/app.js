@@ -6,8 +6,11 @@ let state = {
   cases: [],
   users: [],
   buyerNeeds: [],
+  feedback: [],
   activeTab: 'cases'
 };
+
+const TAB_LABEL = { cases: '案件牆', buyerNeeds: '客需媒合', users: '成員與權限', feedback: '意見回饋' };
 
 const OWNERSHIP_LABEL = { confirmed: '產權已確認', pending: '產權確認中', disputed: '產權有糾紛' };
 const OWNERSHIP_CLASS = { confirmed: 'ok', pending: 'warn', disputed: 'danger' };
@@ -94,6 +97,8 @@ function logout() {
   document.getElementById('loginHint').classList.remove('hidden');
   document.getElementById('logoutBtn').classList.add('hidden');
   document.getElementById('whoami').textContent = '';
+  document.getElementById('feedbackFab').classList.add('hidden');
+  document.getElementById('loginFields').classList.remove('hidden');
 }
 
 async function afterLogin() {
@@ -101,8 +106,12 @@ async function afterLogin() {
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('loginHint').classList.add('hidden');
   document.getElementById('logoutBtn').classList.remove('hidden');
+  document.getElementById('feedbackFab').classList.remove('hidden');
+  document.getElementById('loginFields').classList.add('hidden');
   document.getElementById('whoami').textContent = `${state.me.name}（${state.me.role === 'admin' ? '管理者' : '經紀人'}）`;
-  document.querySelector('button[data-tab="users"]').style.display = state.me.role === 'admin' ? '' : 'none';
+  const isAdmin = state.me.role === 'admin';
+  document.querySelector('button[data-tab="users"]').style.display = isAdmin ? '' : 'none';
+  document.querySelector('button[data-tab="feedback"]').style.display = isAdmin ? '' : 'none';
   await refreshAll();
 }
 
@@ -115,7 +124,9 @@ function switchTab(tab) {
 }
 
 async function refreshAll() {
-  await Promise.all([loadCases(), loadUsers(), loadBuyerNeeds()]);
+  const tasks = [loadCases(), loadUsers(), loadBuyerNeeds()];
+  if (state.me.role === 'admin') tasks.push(loadFeedback());
+  await Promise.all(tasks);
 }
 
 // ---------- 案件牆 ----------
@@ -729,6 +740,97 @@ function openNewUserModal() {
   });
 }
 
+// ---------- 意見回饋 ----------
+
+async function loadFeedback() {
+  const data = await api('/feedback');
+  state.feedback = data.feedback;
+  renderFeedback();
+}
+
+function renderFeedback() {
+  const box = document.getElementById('feedbackList');
+  if (!box) return;
+  if (!state.feedback.length) {
+    box.innerHTML = '<p class="hint">目前還沒有收到任何意見回饋。</p>';
+    return;
+  }
+  box.innerHTML = '';
+  state.feedback.forEach((f) => {
+    const stars = f.rating ? '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating) : '（未評分）';
+    const card = el(`
+      <div class="feedback-card">
+        <div class="meta">
+          <span>${escapeHtml(f.authorName)}・${escapeHtml(TAB_LABEL[f.page] || f.page || '未指定畫面')}・${stars}・${new Date(f.createdAt).toLocaleString('zh-Hant-TW')}</span>
+          <span>
+            <span class="tag status-${f.status}">${f.status === 'reviewed' ? '已處理' : '待處理'}</span>
+            <button class="small-btn" data-toggle-status="${f.id}">${f.status === 'reviewed' ? '標記為待處理' : '標記已處理'}</button>
+          </span>
+        </div>
+        <div class="body">${escapeHtml(f.content || '（無文字意見，僅評分）')}</div>
+      </div>
+    `);
+    box.appendChild(card);
+  });
+  box.querySelectorAll('[data-toggle-status]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const f = state.feedback.find((x) => x.id === btn.dataset.toggleStatus);
+      await api(`/feedback/${f.id}`, { method: 'PATCH', body: { status: f.status === 'reviewed' ? 'new' : 'reviewed' } });
+      await loadFeedback();
+    });
+  });
+}
+
+function openFeedbackModal() {
+  showModal(`
+    <button class="modal-close">×</button>
+    <h2>意見回饋</h2>
+    <p class="hint">試用時想到什麼都可以直接留言，管理者會在「意見回饋」頁籤彙整查看。</p>
+    <div class="form-grid">
+      <label class="field full">這則回饋跟哪個畫面有關？
+        <select id="fb-page">
+          ${Object.entries(TAB_LABEL).map(([k, v]) => `<option value="${k}" ${k === state.activeTab ? 'selected' : ''}>${v}</option>`).join('')}
+          <option value="other">其他／整體</option>
+        </select>
+      </label>
+      <label class="field full">整體滿意度（可不選）
+        <div class="rating-select" id="fb-rating">
+          ${[1, 2, 3, 4, 5].map((n) => `<button type="button" data-rating="${n}">${n}</button>`).join('')}
+        </div>
+      </label>
+      <label class="field full">意見內容<textarea id="fb-content" placeholder="例如：哪個步驟卡住、畫面看不懂、希望增加什麼功能…"></textarea></label>
+    </div>
+    <div id="fbError" class="error-msg"></div>
+    <div class="form-row" style="margin-top:14px;"><button class="primary-btn" id="submitFeedback">送出</button></div>
+  `, (box) => {
+    box.querySelector('.modal-close').addEventListener('click', closeModal);
+    let selectedRating = null;
+    box.querySelectorAll('#fb-rating button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        selectedRating = selectedRating === Number(btn.dataset.rating) ? null : Number(btn.dataset.rating);
+        box.querySelectorAll('#fb-rating button').forEach((b) => b.classList.toggle('selected', Number(b.dataset.rating) === selectedRating));
+      });
+    });
+    box.querySelector('#submitFeedback').addEventListener('click', async () => {
+      try {
+        await api('/feedback', {
+          method: 'POST',
+          body: {
+            page: box.querySelector('#fb-page').value,
+            rating: selectedRating,
+            content: box.querySelector('#fb-content').value.trim()
+          }
+        });
+        closeModal();
+        if (state.me && state.me.role === 'admin') await loadFeedback();
+        alert('謝謝你的回饋！');
+      } catch (err) {
+        box.querySelector('#fbError').textContent = err.message;
+      }
+    });
+  });
+}
+
 // ---------- 初始化 ----------
 
 document.getElementById('loginBtn').addEventListener('click', login);
@@ -738,6 +840,7 @@ document.querySelectorAll('nav#tabs button').forEach((b) => b.addEventListener('
 document.getElementById('newCaseBtn').addEventListener('click', openNewCaseModal);
 document.getElementById('newNeedBtn').addEventListener('click', openNewNeedModal);
 document.getElementById('newUserBtn').addEventListener('click', openNewUserModal);
+document.getElementById('feedbackFab').addEventListener('click', openFeedbackModal);
 
 (async function init() {
   if (state.token) {

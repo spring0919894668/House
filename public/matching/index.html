@@ -10,8 +10,10 @@
   <header>
     <h1>工業廠房案件媒合社群</h1>
     <div id="authBox" class="auth-box">
-      <input id="tokenInput" type="password" placeholder="貼上個人存取權杖 (Token)" />
-      <button id="loginBtn">登入</button>
+      <span id="loginFields">
+        <input id="tokenInput" type="password" placeholder="貼上個人存取權杖 (Token)" />
+        <button id="loginBtn">登入</button>
+      </span>
       <span id="whoami" class="whoami"></span>
       <button id="logoutBtn" class="hidden">登出</button>
     </div>
@@ -21,6 +23,7 @@
     <button data-tab="cases" class="active">案件牆</button>
     <button data-tab="buyerNeeds">客需媒合</button>
     <button data-tab="users">成員與權限</button>
+    <button data-tab="feedback">意見回饋</button>
   </nav>
 
   <main id="app" class="hidden">
@@ -48,7 +51,17 @@
       <p class="hint">僅系統管理者可新增／調整同事帳號；案件的檢視／編輯權限則在每個案件詳情頁設定。</p>
       <div id="userList" class="card-grid"></div>
     </section>
+
+    <section id="view-feedback" class="view">
+      <div class="toolbar">
+        <h2>意見回饋（管理者彙整）</h2>
+      </div>
+      <p class="hint">同事試用時透過畫面右下角的「💬 意見回饋」按鈕留下的內容都會彙整在這裡，僅系統管理者看得到。</p>
+      <div id="feedbackList"></div>
+    </section>
   </main>
+
+  <button id="feedbackFab" class="feedback-fab hidden" title="意見回饋">💬 意見回饋</button>
 
   <div id="modalRoot"></div>
 
