@@ -1,11 +1,17 @@
+const govOpenData = require('./govOpenData');
+
 // 「實價合理性分析」轉接層（Adapter）。
 //
 // 目的：買方經紀需要判斷賣方開價是否合理、賣方經紀需要有數據支持議價，
-// 兩者都需要一份「實價分析」。正式環境建議串接內政部實價登入資料或
-// 第三方實價 AI 服務；在尚未申請到 API 之前，系統改用「同地區、同類型
-// 案件」的內部歷史成交/開價資料試算，讓功能可以先跑起來。
+// 兩者都需要一份「實價分析」。依優先順序嘗試三種資料來源：
+//   1. PRICE_AI_ENDPOINT：自訂／第三方實價 AI 服務（未設定則略過）
+//   2. GOV_PRICE_REGISTRY_ENABLED=true：內政部「實價登錄」官方開放資料
+//      （見 src/matching/priceEngine/govOpenData.js，抓取官方批次資料，
+//      篩出同縣市、廠房／工業用的比較案例）
+//   3. 都沒有資料或查詢失敗時，退回「同地區、同類型」的系統內部案件與
+//      手動輸入比較案例試算，讓功能在尚未接上正式服務前也能先跑起來。
 //
-// 要換成正式服務，只需在 .env 設定 PRICE_AI_ENDPOINT（與可選的
+// 要換成其他正式服務，只需在 .env 設定 PRICE_AI_ENDPOINT（與可選的
 // PRICE_AI_API_KEY），並確保該服務回傳下列格式即可，其餘程式碼不需更動：
 //   { suggestedLow, suggestedHigh, avgUnitPrice, comparables: [...], source, note }
 
@@ -14,6 +20,15 @@ async function estimate(caseItem, allCases) {
   if (endpoint) {
     return callExternalPriceAI(caseItem, endpoint);
   }
+
+  if (process.env.GOV_PRICE_REGISTRY_ENABLED === 'true') {
+    try {
+      return await govOpenData.estimateFromGovData(caseItem);
+    } catch (err) {
+      console.warn(`[priceEngine] 實價登錄開放資料查詢失敗，改用內部比較案例試算：${err.message}`);
+    }
+  }
+
   return localEstimate(caseItem, allCases);
 }
 
