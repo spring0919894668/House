@@ -155,6 +155,54 @@ npm run fetch:news
 建議用系統排程（cron、GitHub Actions、雲端排程器等）每 30–60 分鐘打一次
 `POST /api/news/fetch`，或直接排程執行 `npm run fetch:news`。
 
+### 部署到 Render
+
+> **重要：請務必使用付費的 Starter 方案（或以上），不要用 Free 方案。**
+> 原因：
+> 1. Free 方案的服務閒置一段時間會自動休眠，要等有新的 HTTP 請求進來才會
+>    醒過來——但每日自動發文是靠伺服器內部的計時器（`node-cron`）在指定
+>    時間觸發，如果服務當下正在睡覺，排程就不會執行，發文會整個漏掉。
+> 2. Free 方案沒有持久化磁碟（Persistent Disk），檔案系統是暫時的，只要
+>    重新部署或服務重啟，`data/db.json`（新聞資料、頻道排程設定、群組
+>    ID、發文紀錄）就會全部被清空。
+
+**方法一：用 Blueprint 一次套用（推薦）**
+
+1. 登入 [Render Dashboard](https://dashboard.render.com/)，點
+   **New +** → **Blueprint**。
+2. 選擇並連接 `spring0919894668/House` 這個 GitHub repo（第一次連接需要
+   授權 Render 存取你的 GitHub）。
+3. Render 會自動讀到 repo 根目錄的 `render.yaml`，列出即將建立的資源：
+   - 1 個 Web Service（含 1GB 的 Persistent Disk，掛載在 `/var/data`）
+   - `ADMIN_TOKEN` 會自動產生一組隨機值
+   - 4 組 `LINE_BOT_*_CHANNEL_ACCESS_TOKEN` / `LINE_BOT_*_CHANNEL_SECRET`
+     欄位會留空，需要你手動貼上（`sync: false`，代表不會存進 git，只存在
+     Render 後台）
+4. 按 **Apply**，等它自動 build + 部署完成。
+5. 部署完成後，到該服務的 **Environment** 分頁，把 4 個 LINE 頻道各自的
+   Channel access token / Channel secret 貼進對應欄位，儲存後服務會自動
+   重新啟動套用設定。
+6. 拿到 Render 配發的網址（例如 `https://house-line-news-assistant.onrender.com`），
+   到 LINE Developers Console 把 4 個頻道的 Webhook URL 分別設成
+   `https://<你的網址>/webhook/A`（B/C/D 依此類推），並打開
+   「Use webhook」。
+
+**方法二：手動建立 Web Service**
+
+如果不想用 Blueprint，也可以手動設定：
+
+1. **New +** → **Web Service**，連接 repo，分支選
+   `claude/line-auto-posting-assistant-9f0qg7`（之後 PR 合併進 `main`
+   後可改連 `main`）。
+2. Build Command：`npm install`；Start Command：`npm start`。
+3. Plan 選 **Starter** 以上（理由同上方提醒）。
+4. 到 **Disks** 新增一顆磁碟，Mount Path 填 `/var/data`，容量 1GB 即可。
+5. 到 **Environment** 新增環境變數：`DATA_DIR=/var/data`、`ADMIN_TOKEN`
+   （自訂一組長字串）、以及 4 組 `LINE_BOT_*_CHANNEL_ACCESS_TOKEN` /
+   `LINE_BOT_*_CHANNEL_SECRET` / `LINE_BOT_*_NAME`（參考 `.env.example`）。
+   `PORT` 不用自己設，Render 會自動注入。
+6. 部署完成後，同方法一的步驟 6 設定 4 個 Webhook URL。
+
 ---
 
 ## 五、使用教學（操作流程）

@@ -5,7 +5,9 @@ const path = require('path');
 // 若未來新聞量與群組數變大，可平行替換成 SQLite / PostgreSQL，
 // 只要保留這裡輸出的函式介面即可。
 
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
+// DATA_DIR 可用環境變數覆寫，方便掛載雲端平台（如 Render）的持久化磁碟，
+// 避免每次重新部署或容器重啟就把新聞/排程/發文紀錄清空。
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', '..', 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 const DEFAULT_DATA = {
