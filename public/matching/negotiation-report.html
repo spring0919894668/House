@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>賣方議價專業報告書</title>
+<link rel="stylesheet" href="report.css" />
+</head>
+<body>
+  <div class="report-actions no-print">
+    <button onclick="window.print()">列印／匯出 PDF</button>
+  </div>
+  <div id="content" class="report-page">載入中…</div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const caseId = params.get('caseId');
+    const token = localStorage.getItem('matchingToken') || '';
+
+    function money(n) { return n == null ? '—' : Number(n).toLocaleString('zh-Hant-TW'); }
+    function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    async function load() {
+      const box = document.getElementById('content');
+      if (!token || !caseId) {
+        box.innerHTML = '<p>缺少登入權杖或案件編號，請從主頁面點選「賣方議價報告書」連結進入。</p>';
+        return;
+      }
+      try {
+        const res = await fetch(`/api/matching/cases/${caseId}/negotiation-report`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || '讀取失敗');
+        render(data.report);
+      } catch (err) {
+        box.innerHTML = `<p>讀取失敗：${esc(err.message)}</p>`;
+      }
+    }
+
+    const ASSESSMENT_LABEL = { aboveMarket: '開價高於行情區間', belowMarket: '開價低於行情區間', withinRange: '開價落在合理區間內' };
+
+    function render(r) {
+      const pa = r.priceAnalysis;
+      document.getElementById('content').innerHTML = `
+        <header>
+          <h1>議價專業報告書</h1>
+          <p class="subtitle">${esc(r.title)}</p>
+        </header>
+
+        <section>
+          <h2>案件概況</h2>
+          <table>
+            <tr><th>地址</th><td>${esc(r.address || '未提供')}</td></tr>
+            <tr><th>面積</th><td>${r.area} ${esc(r.unit)}</td></tr>
+            <tr><th>目前開價</th><td>${money(r.askingPrice)} 元</td></tr>
+            <tr><th>產權狀態</th><td>${esc(r.ownershipStatusLabel)}</td></tr>
+            <tr><th>現況</th><td>${esc(r.currentStatusLabel)}</td></tr>
+          </table>
+        </section>
+
+        <section>
+          <h2>實價合理性分析</h2>
+          <p>資料來源：${pa.source === 'external-ai' ? '外部實價 AI 服務' : pa.source === 'local-estimate' ? '系統內部比較案例試算' : '資料不足，僅供參考'}</p>
+          ${pa.avgUnitPrice ? `<p>比較案例平均單價：約 ${money(pa.avgUnitPrice)} 元</p>` : ''}
+          ${pa.suggestedLow != null ? `<p>建議合理總價區間：<strong>${money(pa.suggestedLow)} ～ ${money(pa.suggestedHigh)} 元</strong></p>` : ''}
+          ${r.priceAnalysis.comparables && r.priceAnalysis.comparables.length ? `
+            <table>
+              <tr><th>比較案例</th><th>面積</th><th>總價</th><th>單價</th></tr>
+              ${r.priceAnalysis.comparables.map((c) => `<tr><td>${esc(c.label)}</td><td>${c.area}</td><td>${money(c.price)}</td><td>${money(Math.round(c.unitPrice))}</td></tr>`).join('')}
+            </table>` : ''}
+          ${pa.note ? `<p class="note">${esc(pa.note)}</p>` : ''}
+        </section>
+
+        ${r.negotiationRange ? `
+        <section class="highlight-box">
+          <h2>建議議價策略</h2>
+          <p>建議底線：${money(r.negotiationRange.floor)} 元</p>
+          <p>建議開口價：${money(r.negotiationRange.recommendedOpening)} 元（目前開價）</p>
+          <p>可接受上限：${money(r.negotiationRange.ceiling)} 元</p>
+          ${pa.assessment ? `<p><strong>${esc(ASSESSMENT_LABEL[pa.assessment] || '')}</strong></p>` : ''}
+        </section>` : ''}
+
+        ${r.strengths.length ? `
+        <section>
+          <h2>議價優勢</h2>
+          <ul>${r.strengths.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
+        </section>` : ''}
+
+        ${r.risks.length ? `
+        <section>
+          <h2>需留意風險</h2>
+          <ul>${r.risks.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
+        </section>` : ''}
+
+        ${r.viewingFeedback.length ? `
+        <section>
+          <h2>帶看回饋紀錄</h2>
+          <ul>${r.viewingFeedback.map((v) => `<li>${esc(v.date)}（${esc(v.attendee || '未填')}）：${esc(v.note || '（無備註）')}</li>`).join('')}</ul>
+        </section>` : ''}
+
+        <footer>產出時間：${new Date(r.generatedAt).toLocaleString('zh-Hant-TW')}</footer>
+      `;
+    }
+
+    load();
+  </script>
+</body>
+</html>

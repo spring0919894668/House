@@ -32,6 +32,8 @@ header h1 { font-size: 18px; margin: 0; }
   cursor: pointer;
 }
 .token-box button:hover { background: #2f63d1; }
+.matching-link { color: #9fc0ff; font-size: 13px; text-decoration: none; margin-left: 8px; }
+.matching-link:hover { text-decoration: underline; }
 
 nav#categoryTabs {
   display: flex;

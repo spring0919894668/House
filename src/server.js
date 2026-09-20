@@ -6,6 +6,7 @@ const { registerWebhook } = require('./line/webhook');
 const scheduler = require('./scheduler');
 const newsRoutes = require('./routes/news');
 const scheduleRoutes = require('./routes/schedule');
+const matchingRoutes = require('./matching/routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +19,10 @@ for (const botKey of ['A', 'B', 'C', 'D']) {
 }
 
 app.use(express.json());
+
+// 案件媒合社群模組使用自己的每位使用者權杖驗證（見 src/matching/auth.js），
+// 需掛在下方全站 ADMIN_TOKEN 檢查之前，避免被單一 token 的規則擋下。
+app.use('/api/matching', matchingRoutes);
 
 // 簡易後台驗證：非本機請求需帶 Authorization: Bearer <ADMIN_TOKEN>
 app.use('/api', (req, res, next) => {

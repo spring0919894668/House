@@ -1,4 +1,5 @@
 node_modules/
 .env
 data/db.json
+data/matching-db.json
 *.log
