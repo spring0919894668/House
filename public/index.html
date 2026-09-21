@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>房地產新聞 LINE 發文助理</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>房地產新聞 LINE 自動發文助理</h1>
+    <div class="token-box">
+      <label>Admin Token</label>
+      <input id="adminToken" type="password" placeholder="貼上 ADMIN_TOKEN" />
+      <button id="saveToken">儲存</button>
+      <button id="fetchNewsBtn">立即抓新聞</button>
+    </div>
+  </header>
+
+  <nav id="categoryTabs"></nav>
+
+  <main>
+    <section id="newsList"></section>
+
+    <aside id="scheduleBoard">
+      <h2>4 個 LINE 頻道排程設定</h2>
+      <div id="botCards"></div>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: house-line-news-assistant
+    runtime: node
+    plan: starter
+    region: singapore
+    branch: claude/line-auto-posting-assistant-9f0qg7
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    disk:
+      name: house-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: LINE_BOT_A_NAME
+        value: 土地法規小助理
+      - key: LINE_BOT_A_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: LINE_BOT_A_CHANNEL_SECRET
+        sync: false
+      - key: LINE_BOT_B_NAME
+        value: 建築市場小助理
+      - key: LINE_BOT_B_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: LINE_BOT_B_CHANNEL_SECRET
+        sync: false
+      - key: LINE_BOT_C_NAME
+        value: 房地產科技小助理
+      - key: LINE_BOT_C_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: LINE_BOT_C_CHANNEL_SECRET
+        sync: false
+      - key: LINE_BOT_D_NAME
+        value: 稅務政策小助理
+      - key: LINE_BOT_D_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: LINE_BOT_D_CHANNEL_SECRET
+        sync: false

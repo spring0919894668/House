@@ -1,0 +1,22 @@
+{
+  "name": "house-line-news-assistant",
+  "version": "1.0.0",
+  "description": "房地產新聞蒐集與 LINE 自動發文助理 (4 頻道版)",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "fetch:news": "node src/news/fetcher.js"
+  },
+  "dependencies": {
+    "@line/bot-sdk": "^9.5.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-cron": "^3.0.3",
+    "rss-parser": "^3.13.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
