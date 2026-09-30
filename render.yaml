@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: starter
     region: singapore
-    branch: claude/line-auto-posting-assistant-9f0qg7
+    branch: claude/sleepy-cerf-8iqvz6
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /healthz
