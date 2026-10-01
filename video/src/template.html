@@ -1,0 +1,327 @@
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8">
+<link rel="stylesheet" href="file:///home/user/House/public/style.css">
+<style>
+html,body{margin:0;padding:0;background:#050912;width:1920px;height:1080px;overflow:hidden;font-family:"WenQuanYi Zen Hei","Noto Sans TC",sans-serif;color:#fff}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;perspective:1800px;background:#060b16}
+#bg{position:absolute;left:0;top:0}
+#cam{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-style:preserve-3d}
+.sc{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-style:preserve-3d}
+.c{position:absolute;left:960px;top:540px;white-space:nowrap;text-align:center;transform-origin:50% 50%}
+.t{font-weight:900;-webkit-text-stroke:2px currentColor;letter-spacing:.02em;line-height:1}
+.grad{background:linear-gradient(100deg,#6ea8ff,#3a7afe 40%,#19e3c0);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:0}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+#vig{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55));pointer-events:none}
+.chip{display:inline-block;width:150px;height:150px;border-radius:36px;font-size:96px;line-height:150px;text-align:center;font-weight:900;color:#fff}
+.bot{width:380px;height:540px;border-radius:36px;background:linear-gradient(160deg,#17233f,#0d1527);border:2px solid rgba(255,255,255,.12);box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.bot .av{position:absolute;left:34px;top:34px;width:96px;height:96px;border-radius:30px;font-size:60px;line-height:96px;text-align:center;font-weight:900}
+.pill{position:absolute;padding:10px 22px;border-radius:40px;font-size:30px;background:rgba(255,255,255,.1)}
+#ui{position:absolute;left:0;top:0;width:1500px;height:960px;font-family:-apple-system,"Noto Sans TC","PingFang TC",sans-serif;background:#f5f6f8;color:#222;transform-style:preserve-3d;transform-origin:50% 50%}
+#ui header,#ui nav,#ui main,#ui aside,#ui .news-card,#ui .bot-card{transform-style:preserve-3d}
+#ui aside{height:auto}
+#ui.ex header,#ui.ex nav,#ui.ex .news-card,#ui.ex aside{box-shadow:0 40px 70px rgba(0,0,0,.5)}#ui.ex nav{background:#fff}
+#uiw{position:absolute;left:960px;top:540px;width:0;height:0;transform-style:preserve-3d}
+#hero{position:absolute;left:0;top:0;width:1500px;height:960px;border-radius:14px}
+.phone{width:400px;height:800px;border-radius:64px;background:#0a0f1c;border:10px solid #2a3350;box-shadow:0 40px 120px rgba(0,0,0,.6),0 0 0 2px #46507a}
+.chat{position:absolute;left:0;top:0;width:380px;height:780px;border-radius:54px;overflow:hidden;background:#7d9cc9}
+.bub{position:absolute;left:22px;width:300px;background:#fff;color:#1b2536;border-radius:6px 24px 24px 24px;padding:14px 18px 16px;font-size:23px;line-height:1.35;white-space:normal;text-align:left;box-shadow:0 6px 14px rgba(0,0,0,.18);transform-origin:0 0}
+.bub b{display:block;font-size:19px;margin-bottom:4px}
+</style></head><body><div id="stage">
+<canvas id="bg" width="1920" height="1080"></canvas>
+<div id="cam">
+ <div class="sc" id="s1"></div><div class="sc" id="s2"></div><div class="sc" id="s3"></div>
+ <div class="sc" id="s4"></div><div class="sc" id="s5"></div><div class="sc" id="s6"></div>
+</div>
+<div id="vig"></div><div id="flash"></div></div>
+<div id="uistash" style="position:absolute;left:-9999px;top:0"><div id="ui"><!--UI--></div></div>
+<script>
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const E={lin:x=>x,oc:x=>1-Math.pow(1-x,3),ox:x=>x>=1?1:1-Math.pow(2,-10*x),ic:x=>x*x*x,ioc:x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,
+ ob:(x,s=1.9)=>1+(s+1)*Math.pow(x-1,3)+s*Math.pow(x-1,2),oe:x=>x<=0?0:x>=1?1:Math.pow(2,-10*x)*Math.sin((x*10-.75)*2*Math.PI/3)+1};
+const P=(t,t0,d,e=E.oc)=>e(clamp((t-t0)/d));
+const spr=(k,f=26,dm=9)=>k<=0?0:1-Math.exp(-dm*k)*Math.cos(f*k);   // 0→1 with overshoot
+const hit=(t,t0,k=0.12)=>{const a=t-t0;return a<0?0:Math.exp(-a/k)};   // decaying kick
+const kicks=[0,.5,1.5,2.5];for(let i=0;i<30;i++)kicks.push(4+i*.5);for(let i=0;i<19;i++)kicks.push(20+i*.5);
+const lastKick=t=>{let b=-9;for(const k of kicks){if(k<=t)b=k;else break}return b};
+const rnd=(()=>{let s=12345;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}})();
+function mk(h,p){const d=document.createElement('div');d.innerHTML=h.trim();const e=d.firstElementChild;p.appendChild(e);return e}
+function S(e,o){let tr='';if(e.classList.contains('c'))tr+='translate(-50%,-50%) ';
+ tr+=`translate3d(${o.x||0}px,${o.y||0}px,${o.z||0}px) rotateX(${o.rx||0}deg) rotateY(${o.ry||0}deg) rotateZ(${o.r||0}deg) scale(${o.sx??o.s??1},${o.sy??o.s??1})`;
+ e.style.transform=tr;e.style.opacity=o.o??1;e.style.filter=o.b?`blur(${o.b}px)`:'';e.style.display=(o.o===0)?'none':'block'}
+// slam: spring from large scale, returns style obj
+function slam(t,t0,from=2.6,x=0,y=0){const k=t-t0;if(k<0)return{o:0,x,y};const s=1+(from-1)*Math.exp(-k*20)*Math.cos(k*36);return{s,o:clamp(k/.04),x,y,b:k<.07?(1-k/.07)*10:0}}
+function pop(t,t0,x=0,y=0,f=26,d=9){const k=t-t0;if(k<0)return{o:0,x,y};return{s:spr(k,f,d),o:1,x,y}}
+const stage=document.getElementById('stage'),cam=document.getElementById('cam'),flash=document.getElementById('flash');
+const sc=[1,2,3,4,5,6].map(i=>document.getElementById('s'+i));
+const COL={A:'#19c3a6',B:'#3a7afe',C:'#9b6bff',D:'#ffb020'};
+const NAMES={A:'土地法規小助理',B:'建築市場小助理',C:'房地產科技小助理',D:'稅務政策小助理'};
+const CATN={A:'土地利用相關',B:'建築營造相關',C:'房地產應用相關',D:'其他房地產相關'};
+const TIMES={A:'09:00',B:'09:30',C:'10:00',D:'10:30'};
+const ICON={
+A:'<svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><path d="M6 50 L24 22 L36 38 L44 28 L58 50Z"/><path d="M6 56h52"/></svg>',
+B:'<svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><path d="M12 56V14h28v42M40 28h14v28M4 56h56M20 24h4M28 24h4M20 34h4M28 34h4M20 44h4M28 44h4"/></svg>',
+C:'<svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><rect x="16" y="16" width="32" height="32" rx="6"/><path d="M26 26h12v12H26zM24 6v10M32 6v10M40 6v10M24 48v10M32 48v10M40 48v10M6 24h10M6 32h10M6 40h10M48 24h10M48 32h10M48 40h10"/></svg>',
+D:'<svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><path d="M14 6h28l10 10v42H14z"/><path d="M42 6v10h10M24 44l16-16"/><circle cx="26" cy="30" r="3"/><circle cx="38" cy="42" r="3"/></svg>'};
+let LID=0;const LOGO=(sz,stroke='#fff')=>{const id='lg'+(++LID);return `<svg viewBox="0 0 220 220" width="${sz}" height="${sz}" fill="none" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7db2ff"/><stop offset="1" stop-color="#19e3c0"/></linearGradient></defs>
+<path class="lp1" d="M18 112 L110 28 L202 112" stroke="url(#${id})" stroke-width="16" pathLength="1" stroke-dasharray="1" stroke-dashoffset="0"/>
+<path class="lp2" d="M44 96 V192 H176 V96" stroke="${stroke}" stroke-width="14" pathLength="1" stroke-dasharray="1" stroke-dashoffset="0"/>
+<path class="lp3" d="M78 140 L102 164 L146 114" stroke="url(#${id})" stroke-width="16" pathLength="1" stroke-dasharray="1" stroke-dashoffset="0"/></svg>`};
+function logoDraw(root,k){const a=root.querySelector('.lp1'),b=root.querySelector('.lp2'),c=root.querySelector('.lp3');
+ a.style.strokeDashoffset=1-E.ioc(clamp(k/.35));b.style.strokeDashoffset=1-E.ioc(clamp((k-.12)/.35));c.style.strokeDashoffset=1-E.oc(clamp((k-.35)/.25))}
+
+/* ================= BACKGROUND ================= */
+const bg=document.getElementById('bg'),g=bg.getContext('2d');
+const parts=Array.from({length:90},()=>({x:rnd()*1920,y:rnd()*1080,r:1+rnd()*3,v:10+rnd()*40,p:rnd()*6}));
+function drawBG(t){
+ const hue=t<4?215:t<8?218:t<14?214:t<20?262:t<26?150:215;
+ const gr=g.createLinearGradient(0,0,0,1080);gr.addColorStop(0,`hsl(${hue},55%,9%)`);gr.addColorStop(1,`hsl(${hue+10},60%,4%)`);
+ g.fillStyle=gr;g.fillRect(0,0,1920,1080);
+ // perspective grid floor
+ g.save();g.strokeStyle=`hsla(${hue+10},90%,65%,.13)`;g.lineWidth=2;
+ const hz=620,sp=(t*1.2)%1;
+ for(let i=0;i<14;i++){const f=(i+sp)/14,y=hz+Math.pow(f,2.2)*(1080-hz)*1.3;g.beginPath();g.moveTo(0,y);g.lineTo(1920,y);g.stroke()}
+ for(let i=-14;i<=14;i++){g.beginPath();g.moveTo(960+i*60,hz);g.lineTo(960+i*420,1100);g.stroke()}
+ g.restore();
+ // beat rings
+ for(const k of kicks){const a=t-k;if(a<0||a>1.1)continue;const r=a*1500;g.strokeStyle=`hsla(${hue+20},95%,65%,${(1-a/1.1)*.22})`;g.lineWidth=3+ (1-a)*10;g.beginPath();g.arc(960,540,r,0,7);g.stroke()}
+ // particles
+ for(const p of parts){const y=((p.y-t*p.v)%1080+1080)%1080,x=p.x+Math.sin(t*.6+p.p)*30;g.fillStyle=`hsla(${hue+20},90%,75%,${.25+.25*Math.sin(t*2+p.p)})`;g.beginPath();g.arc(x,y,p.r,0,7);g.fill()}
+ // glow
+ const gl=g.createRadialGradient(960,540,0,960,540,900);gl.addColorStop(0,`hsla(${hue+10},90%,55%,${.18+.12*hit(t,lastKick(t),.2)})`);gl.addColorStop(1,'transparent');g.fillStyle=gl;g.fillRect(0,0,1920,1080);
+}
+
+/* ================= S1 : HOOK 0–4 ================= */
+const s1=sc[0];
+const bgWord=mk('<div class="c t" style="font-size:760px;color:transparent;-webkit-text-stroke:3px rgba(120,160,255,.16)">房</div>',s1);
+const w1=mk('<div class="c t" style="font-size:420px">每天</div>',s1);
+const w2n=mk('<div class="c t grad" style="font-size:560px"><span id="cnt">0</span><span id="plus">+</span></div>',s1);
+const w2s=mk('<div class="c t" style="font-size:120px">個 LINE 群組</div>',s1);
+const w3=mk('<div class="c t" style="font-size:150px">4 大主題新聞</div>',s1);
+const chips=['A','B','C','D'].map(k=>mk(`<div class="c chip" style="background:${COL[k]}">${k}</div>`,s1));
+const w4=mk('<div class="c t" style="font-size:230px">手動整理？</div>',s1);
+const strike=mk('<div class="c" style="width:1100px;height:26px;background:#ff3b5c;border-radius:13px"></div>',s1);
+const w5=mk('<div class="c t" style="font-size:260px;color:#ff3b5c">太慢了</div>',s1);
+const cnt=w2n.querySelector('#cnt'),plus=w2n.querySelector('#plus');
+function exitO(t,t1,d=.12){const a=P(t,t1-d,d,E.ic);return{o:1-a,y:-120*a,b:a*14}}
+function scene1(t){
+ S(bgWord,{s:1.1+t*.04,r:-6+t*1.2,o:1,x:-380,y:60});
+ // 每天
+ let e=slam(t,0,2.8);let x=exitO(t,.5);if(t<.5)S(w1,{...e,y:x.y,b:x.b||e.b,o:e.o*x.o});else S(w1,{o:0});
+ // 100+
+ if(t>=.5&&t<1.5){e=slam(t,.5,2.2);x=exitO(t,1.5);cnt.textContent=Math.round(100*P(t,.5,.55,E.oc));plus.style.opacity=t>1.05?1:0;
+  const pl=hit(t,1.05,.1);S(w2n,{...e,y:-90+x.y,o:e.o*x.o,b:x.b||e.b,s:(e.s||1)*(1+.04*pl)});
+  const e2=slam(t,1.0,2.0);S(w2s,{...e2,y:230+x.y,o:e2.o*x.o})}else{S(w2n,{o:0});S(w2s,{o:0})}
+ // 4 大主題
+ if(t>=1.5&&t<2.5){e=slam(t,1.5,2.4);x=exitO(t,2.5);S(w3,{...e,y:-70+x.y,o:e.o*x.o,b:x.b||e.b});
+  chips.forEach((c,i)=>{const p=pop(t,1.65+i*.1,(i-1.5)*190,150+x.y);S(c,{...p,o:p.o*x.o,r:(i-1.5)*4*(1-clamp((t-1.65-i*.1)/.3))})})}else{S(w3,{o:0});chips.forEach(c=>S(c,{o:0}))}
+ // 手動整理？ -> strike -> 太慢了
+ if(t>=2.5&&t<3.75){e=slam(t,2.5,2.4);x=exitO(t,3.75,.25);const sk=P(t,3.0,.15,E.ox);
+  S(w4,{...e,y:-40+x.y,o:e.o*x.o,b:x.b||e.b});S(strike,{x:0,y:-40,sx:sk,o:sk>0?x.o:0,r:-2});
+  const e5=slam(t,3.0,3.4);S(w5,{...e5,y:190+x.y,o:e5.o*x.o,r:-4+Math.sin(t*90)*hit(t,3.0,.15)*3})}else{S(w4,{o:0});S(strike,{o:0});S(w5,{o:0})}
+}
+
+/* ================= S2 : LOGO 4–8 ================= */
+const s2=sc[1];
+const ring=[0,1,2].map(i=>mk('<div class="c" style="width:400px;height:400px;border-radius:50%;border:8px solid #7db2ff"></div>',s2));
+const lg=mk(`<div class="c">${LOGO(250)}</div>`,s2);
+const word=[...'相信地產'].map(ch=>mk(`<div class="c t" style="font-size:240px">${ch}</div>`,s2));
+const sub=mk('<div class="c t" style="font-size:54px;color:#a9c4ff;font-weight:400;-webkit-text-stroke:.5px #a9c4ff;letter-spacing:.3em">房地產新聞 LINE 自動發文助理</div>',s2);
+const bar=mk('<div class="c" style="width:900px;height:10px;border-radius:5px;background:linear-gradient(90deg,#3a7afe,#19e3c0)"></div>',s2);
+const orb=['A','B','C','D'].map(k=>mk(`<div class="c" style="width:120px;height:120px;border-radius:34px;background:${COL[k]};display:flex;align-items:center;justify-content:center;color:#fff">${ICON[k].replace(/width="64" height="64"/,'width="68" height="68"')}</div>`,s2));
+function scene2(t){
+ const k=t-4;
+ ring.forEach((r,i)=>{const a=clamp((k-i*.12)/.9);S(r,{s:.3+a*5,o:k<i*.12?0:(1-a)*.9,y:-60})});
+ logoDraw(lg,k-.02);
+ const zoom=P(t,7.45,.55,E.ic);
+ const lx=-430,sp=.11;
+ word.forEach((w,i)=>{const e=slam(t,4.45+i*sp,2.4);S(w,{...e,x:(i-1.5)*270,y:75,o:e.o*(1-zoom),s:(e.s||1)*(1+zoom*7)})});
+ const sb=P(t,5.4,.5,E.ox);sub.style.letterSpacing=(.7-.4*sb)+'em';S(sub,{o:sb*(1-zoom),y:265-30*(1-sb)});
+ S(bar,{sx:P(t,5.2,.5,E.ioc),y:335,o:1-zoom});
+ orb.forEach((o,i)=>{const a=(t-4)*1.6+i*Math.PI/2;const p=pop(t,6.0+i*.125,Math.cos(a)*800,Math.sin(a)*150-250,20,8);S(o,{...p,o:p.o*(1-zoom),z:Math.sin(a)*100,r:Math.sin(a)*10})});
+ S(lg,{x:0,y:-300-zoom*100,o:k<0?0:1-zoom,s:Math.max(.001,spr(k-.05,22,8))*(1+zoom*5)});
+}
+
+/* ================= S3 : PRODUCT 8–14 ================= */
+const s3=sc[2];
+const uiw=mk('<div id="uiw"></div>',s3);const ui=document.getElementById('ui');uiw.appendChild(ui);ui.style.left='-750px';ui.style.top='-480px';
+const hero=mk('<img id="hero" src="file:///tmp/claude-0/-home-user-House/9fb84cd2-a76d-53ee-8f53-0d778b8b0f33/scratchpad/shots/full.png" style="left:-750px;top:-480px">',uiw);
+const uiHdr=ui.querySelector('header'),uiNav=ui.querySelector('nav'),uiMain=ui.querySelector('main'),uiAside=ui.querySelector('aside'),cards=[...ui.querySelectorAll('.news-card')],bots=[...ui.querySelectorAll('.bot-card')],tabs=[...ui.querySelectorAll('#categoryTabs button')];
+bots.splice(2).forEach(b=>b.remove());
+const cbox=(c,k)=>c.querySelector(`input[data-bot=${k}]`);
+function tag(card,sel){const tg=card.querySelector('.status-tag');if(sel){tg.className='status-tag selected';tg.textContent='已勾選待發'}}
+const cap=(txt,sz,col='#fff')=>mk(`<div class="c t" style="font-size:${sz}px;color:${col};text-align:left">${txt}</div>`,s3);
+const c1=cap('新聞<span class="grad">自動</span>蒐集',140),c2=cap('智慧分類 A・B・C・D',68,'#a9c4ff');
+const c3=cap('拆開來，<span class="grad">一鍵勾選</span>',130),c4=cap('每個頻道，各自排程',72,'#a9c4ff');
+const rbadge=[['A',COL.A],['B',COL.B],['C',COL.C],['D',COL.D]].map(([k,c])=>mk(`<div class="c chip" style="width:110px;height:110px;line-height:110px;font-size:68px;border-radius:28px;background:${c}">${k}</div>`,s3));
+function scene3(t){
+ const k=t-8;
+ // phases
+ const intro=P(t,8,.7,E.oe);
+ const spin=Math.sin(t*1.1)*3;
+ const ex=P(t,10.0,.65,E.ob);               // explode
+ const heroO=t<10?1:0;
+ hero.style.display=t<10?'block':'none';ui.style.visibility=t<10?'hidden':'visible';ui.style.background=t<10?'#f5f6f8':'transparent';ui.classList.toggle('ex',t>=10);
+ // real news-card checkbox taps
+ const tickC=t>=11.0,tickA=t>=11.5;cbox(cards[2],'C').checked=tickC;cbox(cards[4],'A').checked=tickA;cbox(cards[2],'B').checked=t>=12.0;
+ if(tickC)tag(cards[2],1);if(tickA)tag(cards[4],1);
+ // uiw transform
+ let x=440*(1-ex)+50*ex, y=-110*ex, s=.62+.08*ex, ry=-14+(1-intro)*-40+ex*6, rx=4+ex*2;
+ if(t>=12.5){const f=P(t,12.5,.6,E.ioc);x=x*(1-f)-600*f*s/.7*0+(-760)*f;y=y+(110)*f;s=s+.55*f;ry=ry+f*20}
+ const sw=P(t,8,.75,E.oe);
+ S(uiw,{x:x+ (1-sw)*900,y:y+(1-sw)*60,z:-200*(1-sw),s:s*(0.5+0.5*sw),ry:ry+spin*(1-ex),rx:rx,r:(1-sw)*10,o:clamp((t-7.9)/.1)});
+ // exploded parts
+ const L=(el,z,dx,dy,dr=0,delay=0)=>{const f=P(t,10.0+delay,.65,E.ob);S(el,{z:z*f,x:dx*f,y:dy*f,r:dr*f,o:1})};
+ L(uiHdr,170,0,-60,0,0);L(uiNav,110,0,-25,0,.04);
+ cards.forEach((c,i)=>{L(c,40+i*10,i%2?40:-20,(i-2)*12,(i-2)*-1.0,.06+i*.035)});
+ L(uiAside,140,40,0,0,.12);
+ bots.forEach((b,i)=>{const f=P(t,10.1+i*.07,.55,E.ob);S(b,{z:(i<2?30:0)*f,s:i<2?1:f,o:i<2?1:clamp(f*3),y:0})});
+ // tab highlights on beats
+ if(t>=10.6){const idx=Math.floor((t-10.5)/.25)%5;tabs.forEach((b,i)=>b.className=i===(t<11?0:3)?'active':'')}
+ // 12.5+ cards fly away
+ cards.forEach((c,i)=>{if(t>=12.5){const f=P(t,12.5+i*.06,.5,E.ic);S(c,{z:(40+i*10),x:(i%2?40:-20)-1500*f,y:(i-2)*12-100*f,s:1-.4*f,o:1-f,r:(i-2)*-1.0-12*f})}});
+ // pulse a card on tick
+ [[2,11.0],[4,11.5]].forEach(([i,tt])=>{const h=hit(t,tt,.12);if(t>=tt&&t<12.5){const cur=c=>c;cards[i].style.boxShadow=`0 0 ${60*h}px ${10*h}px rgba(58,122,254,${.8*h})`;}});
+ // captions
+ const o1=t<10?1:0;
+ const q=slam(t,8.5,2.6);S(c1,{...q,x:-440,y:-170,o:o1*q.o});const q2=slam(t,9.0,1.9);S(c2,{...q2,x:-440,y:-30,o:o1*q2.o});
+ // when intro shows left captions, position text left: set left anchor trick
+ c1.style.textAlign=c2.style.textAlign='left';
+ const q3=slam(t,10.5,2.2);const o3=t>=10.5&&t<12.5?1:0;S(c3,{...q3,x:0,y:410,o:o3*q3.o});
+ const q4=slam(t,12.5,2.2);const o4=t>=12.5?1:0;S(c4,{...q4,x:-330,y:420,o:o4*q4.o});
+ rbadge.forEach((b,i)=>{const p=pop(t,9.0+i*.125,-640+i*140,110,24,8);S(b,{...p,o:t<10?p.o:0})});
+}
+
+/* ================= S4 : 4 BOTS 14–20 ================= */
+const s4=sc[3];
+const t4=mk('<div class="c t" style="font-size:150px">4 個 <span class="grad">LINE 助理</span></div>',s4);
+const t4b=mk('<div class="c t" style="font-size:66px;color:#a9c4ff;font-weight:400">各司其職・分頭出擊</div>',s4);
+const botEls=['A','B','C','D'].map(k=>{
+ const e=mk(`<div class="c bot"><div class="av" style="background:${COL[k]};color:#fff">${k}</div>
+ <div style="position:absolute;right:34px;top:48px;color:${COL[k]}">${ICON[k]}</div>
+ <div class="t" style="position:absolute;left:34px;top:170px;font-size:44px;text-align:left;-webkit-text-stroke:1px #fff">${NAMES[k]}</div>
+ <div style="position:absolute;left:34px;top:240px;font-size:30px;color:#9fb3d9">${CATN[k]}</div>
+ <div class="pill" style="left:34px;top:330px;color:${COL[k]};background:${COL[k]}22">每日自動發文</div>
+ <div class="t" data-time style="position:absolute;left:34px;top:410px;font-size:96px;color:#fff;-webkit-text-stroke:1px #fff">${TIMES[k]}</div>
+ <div style="position:absolute;left:0;bottom:0;width:380px;height:14px;border-radius:0 0 36px 36px;background:${COL[k]}"></div></div>`,s4);return e});
+const phone=mk('<div class="c phone"><div class="chat"><div style="position:absolute;left:0;top:0;width:380px;height:92px;background:#1f2d3d;color:#fff;font-size:28px;line-height:92px;text-align:center" class="t">相信地產 群組</div></div></div>',s4);
+const chat=phone.querySelector('.chat');
+const caps4=['自動分類','定時排程','準時送達'].map((x,i)=>mk(`<div class="c t" style="font-size:104px;color:${['#19c3a6','#6ea8ff','#ffb020'][i]}">${x}</div>`,s4));
+const NEWS=[['A','都市計畫變更放寬 產業園區工廠立體化容積再加碼'],['B','預售屋成交量回溫 建商加速推案'],['C','AI 與智慧建築 ESG 綠建材成房產新趨勢'],['D','房地合一稅與青安貸款新制 央行理監事會聚焦']];
+const bubs=NEWS.map(([k,tt],i)=>mk(`<div class="bub" style="top:${112+i*158}px"><b style="color:${COL[k]}">${NAMES[k]}</b>${tt}</div>`,chat));
+const beams=[0,1,2,3].map(i=>mk(`<div class="c" style="width:12px;height:12px;border-radius:50%;background:${COL[['A','B','C','D'][i]]};box-shadow:0 0 30px ${COL['ABCD'[i]]}"></div>`,s4));
+function scene4(t){
+ const k=t-14;
+ const outp=P(t,19.4,.6,E.ic);
+ const q=slam(t,14.0,2.6);const tOut=P(t,16.9,.3,E.ic);S(t4,{...q,y:-420-tOut*40,s:(q.s||1)*(1-.5*tOut)*(1-outp*0),o:q.o*(1-outp)});
+ const q2=slam(t,14.5,1.8);S(t4b,{...q2,y:-300,o:q2.o*(1-tOut)*(1-outp)});
+ const dirs=[[-1500,0],[0,1300],[0,-1300],[1500,0]];
+ botEls.forEach((b,i)=>{const t0=14.5+i*.5;const a=P(t,t0,.5,E.oe);const bx=(i-1.5)*410;
+  const mv=P(t,17.0,.55,E.ob);
+  const x=(bx+dirs[i][0]*(1-a))*(1-mv)+(-720+i*0)*mv*0+ (bx*0.58-440)*mv*0+ (bx)*(1-mv)*0;
+  const fx=bx*(1-mv)+(-720)*mv, fy=dirs[i][1]*(1-a)*(1)+(-0)*mv;
+  const targetY=-480+0; // top row when docked
+  const px=(1-mv)*(bx+dirs[i][0]*(1-a))+mv*(-740+(i%2)*240);
+  const py=(1-mv)*(dirs[i][1]*(1-a)+20)+mv*(-150+Math.floor(i/2)*320);
+  const kk=hit(t,14.5+i*.5,.15);const beat=t>=16&&t<17?hit(t,16+i*.25,.12):0;
+  const sMain=(1-mv)*1+mv*.56;
+  S(b,{x:px,y:py,s:sMain*(1+.05*beat+.03*kk),r:(1-a)*dirs[i][0]/300+ (1-a)*dirs[i][1]/200,o:(t<14.5+i*.5?0:1)*(1-outp),ry:(1-a)*30});
+  // slot-roll time digits
+  const te=b.querySelector('[data-time]');const roll=P(t,14.7+i*.5,.6,E.oc);const tgt=TIMES['ABCD'[i]];
+  te.textContent=roll<1?tgt.replace(/\d/g,(m,j)=>Math.floor(((t*47+j*7+i*3)|0)%10)):tgt;
+ });
+ const pu=P(t,17.0,.6,E.ob);
+ S(phone,{x:170,y:40+(1-pu)*900,s:1.0,o:(t<17.0?0:1)*(1-outp),ry:-14+(1-pu)*20,r:(1-pu)*8});
+ bubs.forEach((b,i)=>{const p=spr(t-(17.6+i*.5),24,9);b.style.transform=`scale(${Math.max(.0001,p)})`;b.style.opacity=t>=17.6+i*.5?1:0});
+ // beams from docked card to phone
+ beams.forEach((e,i)=>{const t0=17.55+i*.5,a=P(t,t0,.4,E.ic);const sx=-740+(i%2)*240,sy=-150+Math.floor(i/2)*320,ex=170-110,ey=-210+i*152;
+  S(e,{x:sx+(ex-sx)*a,y:sy+(ey-sy)*a,s:a>0&&a<1?2.5-a:0.001,o:(a>0&&a<1)?1:0,z:60})});
+ caps4.forEach((c,i)=>{const q=slam(t,17.5+i*.5,2.2);S(c,{...q,x:640,y:-190+i*170,o:q.o*(1-outp)})});
+ // suck-in out
+ if(outp>0){[phone,...botEls].forEach(e=>{e.style.transform=e.style.transform+` scale(${1-outp*.9})`;});}
+}
+
+/* ================= S5 : GROUPS 20–26 ================= */
+const s5=sc[4];
+const COLS=16,ROWS=7,dots=[];
+for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){dots.push({c,r,e:mk('<div class="c" style="width:58px;height:58px;border-radius:50%;background:#06c755"></div>',s5),d:Math.hypot((c-(COLS-1)/2)*1.05,(r-(ROWS-1)/2)*1.7)})}
+const n5=mk('<div class="c t grad" style="font-size:420px;background-image:linear-gradient(100deg,#8dfcb9,#06c755 60%,#19e3c0)"><span id="n5">0</span>+</div>',s5);
+const n5s=mk('<div class="c t" style="font-size:112px">個 LINE 群組，同步收到</div>',s5);
+const stats=[['每日節省','3','小時'],['準時發送率','99','%'],['漏發','0','則']].map(([a,b,c],i)=>mk(`<div class="c" style="width:480px;height:330px;border-radius:40px;background:linear-gradient(160deg,#1a2a4a,#0d1730);border:2px solid rgba(255,255,255,.14);box-shadow:0 30px 80px rgba(0,0,0,.5)"><div style="position:absolute;left:0;top:34px;width:100%;font-size:42px;color:#a9c4ff">${a}</div><div class="t" style="position:absolute;left:0;top:96px;width:100%;font-size:170px"><span class="grad sn">${b}</span><span style="font-size:70px">${c}</span></div><div style="position:absolute;left:30px;bottom:30px;width:420px;height:12px;border-radius:6px;background:rgba(255,255,255,.1)"><div class="sb" style="height:12px;border-radius:6px;width:0;background:linear-gradient(90deg,#3a7afe,#19e3c0)"></div></div></div>`,s5));
+const foot=mk('<div class="c" style="font-size:34px;color:#8fa4cf">＊數字為示意</div>',s5);
+const clock=['09:00','09:30','10:00','10:30'].map((tm,i)=>mk(`<div class="c" style="width:360px;height:170px;border-radius:34px;background:${COL['ABCD'[i]]}22;border:3px solid ${COL['ABCD'[i]]}"><div class="t" style="position:absolute;left:0;top:26px;width:100%;font-size:82px">${tm}</div><div style="position:absolute;left:0;top:116px;width:100%;font-size:30px;color:#cfe0ff">${NAMES['ABCD'[i]]}</div></div>`,s5));
+const chk=[0,1,2,3].map(i=>mk(`<div class="c" style="width:64px;height:64px;border-radius:50%;background:#06c755"><svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 33 L28 43 L47 21"/></svg></div>`,s5));
+const t5=mk('<div class="c t" style="font-size:130px">準時，<span class="grad">不漏發</span></div>',s5);
+function scene5(t){
+ const k=t-20;
+ const gridO=1-P(t,22.0,.5,E.ic)*0.0;
+ // dots pulse: ripple outward from 20.0 and on each beat
+ const phase=t<22?0:t<24?1:2;
+ dots.forEach((d,i)=>{const dl=20+d.d*.045;const p=pop(t,dl,(d.c-(COLS-1)/2)*112,(d.r-(ROWS-1)/2)*112-0,22,8);
+  const wave=Math.sin(t*5-d.d*.9)*.5+.5;const beat=hit(t,lastKick(t),.14);
+  let o=p.o,s=p.s||0;
+  // after 22 shrink to backdrop
+  const sh=P(t,22.0,.5,E.ioc),sh2=P(t,24.0,.4,E.ioc);
+  const sx=1+( -.45)*sh;
+  S(d.e,{x:p.x*(1+.0*sh),y:p.y+ (sh*0)-(sh*60),s:(s*(1+.2*beat*(d.c%2)+.25*wave*.4))*(1-.45*sh),o:o*(.95-.55*sh)})});
+ // big counter
+ const qn=slam(t,20.5,2.4);document.getElementById('n5').textContent=Math.round(100*P(t,20.5,.5,E.oc));
+ const outN=P(t,22.0,.35,E.ic);
+ S(n5,{...qn,y:-60-outN*120,o:qn.o*(1-outN),b:qn.b});
+ const qs=slam(t,21.0,2.0);S(n5s,{...qs,y:150-outN*60,o:qs.o*(1-outN)});
+ // stat cards 22–24
+ const so=1-P(t,24.0,.35,E.ic);
+ stats.forEach((s,i)=>{const t0=22.0+i*.5;const a=spr(t-t0,22,8);const sn=s.querySelector('.sn'),sb=s.querySelector('.sb');
+  const tgt=[3,99,0][i];const v=Math.round(tgt*P(t,t0+.1,.6,E.oc));sn.textContent=v;sb.style.width=(P(t,t0+.1,.8,E.oc)*[.6,.99,.02][i]*100+(i===2?2:0))+'%';
+  S(s,{x:(i-1)*520,y:40,s:Math.max(.001,a),o:(t<t0?0:1)*so,ry:(1-a)*40,z:30})});
+ S(foot,{x:0,y:290,o:(t>=22.0&&t<24.4?1:0)*clamp((t-22.2)/.3)});
+ // schedule row 24–26
+ const row=P(t,24.0,.2);
+ clock.forEach((c,i)=>{const t0=24.0+i*.5;const a=spr(t-t0,22,8);S(c,{x:(i-1.5)*400,y:-40,s:Math.max(.001,a),o:t<t0?0:1,r:(1-a)*-8,z:30})});
+ chk.forEach((c,i)=>{const t0=24.25+i*.5;const a=spr(t-t0,28,9);S(c,{x:(i-1.5)*400+130,y:-130,s:Math.max(.001,a),o:t<t0?0:1,z:40})});
+ const q5=slam(t,24.0,2.2);S(t5,{...q5,y:200,o:q5.o*(1-P(t,25.8,.2,E.ic))});
+ // hide dots more during stats for legibility handled by opacity
+}
+
+/* ================= S6 : FINALE 26–30 ================= */
+const s6=sc[5];
+const confetti=Array.from({length:70},(_,i)=>{const a=rnd()*Math.PI*2,v=500+rnd()*1500,kind=i%3,col=['#3a7afe','#19e3c0','#ffb020','#9b6bff','#06c755'][i%5];
+ const shapes=['<div class="c" style="width:34px;height:34px;border-radius:8px;background:'+col+'"></div>','<div class="c" style="width:30px;height:30px;border-radius:50%;background:'+col+'"></div>','<div class="c" style="width:0;height:0;border-left:20px solid transparent;border-right:20px solid transparent;border-bottom:34px solid '+col+'"></div>'];
+ return{a,v,e:mk(shapes[kind],s6),r:rnd()*720-360}});
+const lg6=mk(`<div class="c">${LOGO(250)}</div>`,s6);
+const w6=[...'相信地產'].map(ch=>mk(`<div class="c t" style="font-size:250px">${ch}</div>`,s6));
+const tg1=mk('<div class="c t" style="font-size:96px">讓房地產資訊，<span class="grad">自動送達</span></div>',s6);
+const tg2=mk('<div class="c t" style="font-size:48px;color:#a9c4ff;font-weight:400;letter-spacing:.2em;-webkit-text-stroke:.5px #a9c4ff">房地產新聞 LINE 自動發文助理</div>',s6);
+const dline=mk('<div class="c" style="width:1100px;height:8px;border-radius:4px;background:linear-gradient(90deg,#3a7afe,#19e3c0)"></div>',s6);
+function scene6(t){
+ const k=t-26;
+ confetti.forEach(c=>{const kk=Math.max(0,k);const d=c.v*(1-Math.exp(-kk*2.2))/2.2;S(c.e,{x:Math.cos(c.a)*d,y:Math.sin(c.a)*d+kk*kk*220,r:c.r*kk,o:(k<0?0:Math.max(0,1-kk/2.4)),s:1})});
+ S(lg6,{x:0,y:-300,o:k<0?0:1,s:Math.max(.001,spr(k-.02,20,7))});logoDraw(lg6,k-.02);
+ w6.forEach((w,i)=>{const e=slam(t,26.3+i*.1,2.2);S(w,{...e,x:(i-1.5)*285,y:60})});
+ const q=slam(t,27.0,1.9);S(tg1,{...q,y:255});
+ S(dline,{sx:P(t,26.9,.5,E.ioc),y:325});
+ const q2=P(t,27.4,.5,E.ox);S(tg2,{y:385+20*(1-q2),o:q2});
+}
+
+/* ================= MASTER ================= */
+window.render=function(t){
+ drawBG(t);
+ const vis=[[0,4.0],[4.0,8.0],[7.9,14.0],[14.0,20.0],[20.0,26.0],[26.0,31]];
+ sc.forEach((s,i)=>{const on=t>=vis[i][0]&&t<vis[i][1];s.style.display=on?'block':'none'});
+ if(t<4.0)scene1(t);else if(t<8)scene2(t);
+ if(t>=7.9&&t<14)scene3(t);
+ if(t>=14&&t<20)scene4(t);if(t>=20&&t<26)scene5(t);if(t>=26)scene6(t);
+ // camera punch on beat + hard-hit shake
+ const lk=lastKick(t),a=t-lk;const big=[4,8,10,14,20,26].find(b=>t>=b&&t<b+.4);
+ const punch=a>=0?Math.exp(-a*11):0;
+ const sh=big!==undefined?Math.exp(-(t-big)*9):0;
+ const camS=1+(t<4?.012:.018)*punch+ (t>=29.3?0:0);
+ cam.style.transform=`translate(${Math.sin(t*140)*14*sh}px,${Math.cos(t*170)*14*sh}px) scale(${camS}) rotateZ(${Math.sin(t*90)*.6*sh}deg)`;
+ // white flashes
+ let f=0;[[4.0,.95],[26.0,.9],[20.0,.5],[8.0,.35],[14.0,.4],[10.0,.35]].forEach(([ft,fv])=>{const d=t-ft;if(d>=0&&d<.35)f=Math.max(f,fv*Math.exp(-d*14))});
+ // transition wipes  3.75-4 build whiteness
+ if(t>3.8&&t<4.0)f=Math.max(f,(t-3.8)*3);
+ // end fade
+ const fo=P(t,29.35,.65,E.lin);flash.style.background=fo>0?'#000':'#fff';flash.style.opacity=fo>0?fo:f;
+ if(t<.25){flash.style.background='#000';flash.style.opacity=1-t/.25*1}
+};
+window.render(0);
+</script></body></html>
