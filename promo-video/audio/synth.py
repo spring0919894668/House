@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Original, fully synthesized wuxia score (no samples, no copyrighted material).
-120 BPM, A-minor pentatonic (A C D E G). 30.0 s stereo @ 44.1 kHz.
+120 BPM, C-major pentatonic (C D E G A) – heroic Hong-Kong-kung-fu-epic style: marching taiko, suona lead, cymbal chatter, unison hero theme (original melody). 30.0 s stereo @ 44.1 kHz.
 Writes:  audio/score.wav  and  cues.json (single source of truth for the
 animation: every visual hit in the video is placed on a time listed here).
 """
@@ -97,6 +97,30 @@ def wood(vel=1.0, f=1750):  # wood-block / bamboo clapper
     s = np.sin(2 * np.pi * f * t) * np.exp(-t / 0.018) + 0.6 * np.sin(2 * np.pi * f * 1.51 * t) * np.exp(-t / 0.01)
     s += bp(noise(n), 2500, 7000) * np.exp(-t / 0.006) * 0.6
     return s * vel * 0.55
+
+def cym(vel=1.0):
+    n = int(SR * 0.35); t = tarr(n)
+    x = hp(noise(n), 5000) * np.exp(-t / 0.07) + bp(noise(n), 7000, 13000) * np.exp(-t / 0.12) * .6
+    return x * vel * 0.45
+
+def suona(notes):
+    out = np.zeros(N)
+    for (sb, db, m, sl) in notes:
+        t0 = sb * BEAT; d = db * BEAT * 1.0 + 0.1
+        n = int(SR * d); t = tarr(n)
+        semis = m + (0 if sl is None else (sl - m) * np.exp(-t / 0.07)) + 0.8 * np.exp(-t / 0.05) * 0 + 0.18 * np.clip((t - .25) / .3, 0, 1) * np.sin(2 * np.pi * 6.2 * t)
+        f = 440 * 2 ** ((semis - 69) / 12)
+        ph = 2 * np.pi * np.cumsum(f) / SR
+        s = np.zeros(n)
+        for k in range(1, 22):
+            if np.max(f) * k > 11000: break
+            s += np.sin(k * ph + .1 * k) / (k ** 0.55)
+        s = bp(s, 450, 4800, 2) * 2.0 + bp(noise(n), 1500, 4500) * .03
+        att = 1 - np.exp(-t / 0.018); rel = np.minimum(1, np.maximum(0, (d - t) / 0.06))
+        s = np.tanh(s * att * rel * .55) * .30
+        i0 = int(t0 * SR)
+        if i0 < N: out[i0:i0 + n] += s[: N - i0]
+    return out
 
 def clap(vel=1.0):
     n = int(SR * 0.3); t = tarr(n)
@@ -240,7 +264,7 @@ def S(b16): return b16 * BEAT / 4  # 16th note
 
 # ---- section A (0-4s): hook ------------------------------------------------
 drone_n = int(SR * 4.2); td = tarr(drone_n)
-drone = (np.sin(2 * np.pi * 55 * td) + 0.5 * np.sin(2 * np.pi * 110.4 * td) + 0.25 * lp(noise(drone_n), 400) * 0.6)
+drone = (np.sin(2 * np.pi * 65.4 * td) + 0.5 * np.sin(2 * np.pi * 130.8 * td) + 0.25 * lp(noise(drone_n), 400) * 0.6)
 drone *= np.minimum(1, td / 1.2) * 0.22 * np.minimum(1, (4.2 - td) / 0.3)
 bass.add(drone, 0, 1.0)
 wind = bp(noise(int(SR * 4.0)), 300, 2200) * (np.sin(np.pi * tarr(int(SR * 4.0)) / 4.0) ** 2) * 0.12
@@ -279,7 +303,7 @@ don(4.0, 1.3, 55); fx.add(boom(1.4), 4.0, 1.0); fx.add(crash(1.0), 4.0, 1.0)
 fx.add(shing(1.2), 4.0, 1.0, 0.0); fx.add(whoosh(0.5, 300, 9000, 1.0), 3.7, 0.7)
 
 # ---- per-bar groove from 4.0 s ----
-roots = {0: 45, 1: 45, 2: 45, 3: 45, 4: 43, 5: 43, 6: 45, 7: 45, 8: 48, 9: 48, 10: 43, 11: 43, 12: 45, 13: 45, 14: 45}
+roots = {0: 36, 1: 36, 2: 36, 3: 36, 4: 31, 5: 31, 6: 33, 7: 31, 8: 36, 9: 36, 10: 31, 11: 31, 12: 36, 13: 36, 14: 36}
 scale_pent = [57, 60, 62, 64, 67, 69, 72, 74, 76, 79]
 pattern_gz = [0, 3, 5, 3, 2, 4, 6, 4, 0, 3, 5, 7, 6, 4, 3, 2]
 SECTION = lambda tt: ("B" if tt < 8 else "C" if tt < 12 else "D" if tt < 15 else "E" if tt < 20 else "F" if tt < 25 else "G")
@@ -287,7 +311,7 @@ SECTION = lambda tt: ("B" if tt < 8 else "C" if tt < 12 else "D" if tt < 15 else
 def groove_bar(t0, kind):
     """16 slots of 0.125 s starting at t0"""
     if kind == "main":
-        spec = {0: ("don", 1.0), 3: ("ka", .5), 4: ("don", .7), 6: ("ka", .55), 8: ("don", .95),
+        spec = {0: ("don", 1.0), 3: ("ka", .5), 4: ("don", .8), 6: ("ka", .6), 7: ("ka", .6), 8: ("don", 1.0),
                 10: ("don", .5), 11: ("ka", .55), 12: ("don", .8), 14: ("ka", .6), 15: ("ka", .8)}
     elif kind == "half":
         spec = {0: ("don", 1.0), 8: ("don", .75), 12: ("ka", .6), 14: ("ka", .6)}
@@ -304,6 +328,8 @@ def groove_bar(t0, kind):
     # backbeat clap/wood
     for slot in (4, 12):
         perc.add(clap(0.7), t0 + S(slot), 0.9)
+    for slot in (2, 6, 10, 14):
+        perc.add(cym(0.55 + .25 * (slot == 14)), t0 + S(slot), 0.7, 0.35)
     for slot in range(0, 16, 2):
         perc.add(wood(0.28 + 0.1 * (slot % 4 == 0)), t0 + S(slot), 0.7, 0.3 if slot % 4 else -0.3)
 
@@ -381,8 +407,8 @@ for bar in range(2, 15):
     if t0 in (24.0,): pass
     for beat in range(4):
         tt = t0 + beat * BEAT
-        bass.add(bass_note(r if beat % 2 == 0 else r + (7 if beat == 3 else 0), BEAT * 0.9), tt, 0.9)
-bass.add(bass_note(45, 2.0) * 1.0, 28.0, 1.0)
+        bass.add(bass_note(r if beat % 2 == 0 else r + (7 if beat == 3 else 12 if beat == 1 else 0), BEAT * 0.9), tt, 0.9)
+bass.add(bass_note(36, 2.0) * 1.0, 28.0, 1.0)
 
 # ---- guzheng ostinato (sections B, E-G) ----
 def gz_bar(t0, scale_off=0, density=8, vel=0.6):
@@ -402,26 +428,26 @@ for bar in range(2, 15):
     else: gz_bar(t0, 0, 16 if bar in (13,) else 8, 0.55)
 
 # ---- erhu melody ----
-T1 = [(0, 1.5, 76, 72), (1.5, .5, 74, None), (2, 1, 72, None), (3, 1, 69, None),
-      (4, 2, 67, 72), (6, 1, 69, None), (7, 1, 72, None)]
-T2 = [(0, 1, 74, 76), (1, 1, 72, None), (2, 1.5, 69, None), (3.5, .5, 67, None),
-      (4, 3, 69, 64), (7, 1, 67, None)]
-T3 = [(0, .5, 76, None), (.5, .5, 79, None), (1, 1.5, 81, 76), (2.5, .5, 79, None), (3, 1, 76, None),
-      (4, .5, 74, None), (4.5, .5, 76, None), (5, 1, 79, None), (6, 2, 76, 81)]
+H1 = [(0, .5, 67, None), (.5, .5, 72, None), (1, 1.5, 76, 72), (2.5, .5, 74, None), (3, 1, 72, None),
+      (4, .5, 67, None), (4.5, .5, 69, None), (5, 1.5, 72, None), (6.5, .5, 69, None), (7, 1, 67, None)]
+H2 = [(0, .5, 72, None), (.5, .5, 76, None), (1, 1.5, 79, 76), (2.5, .5, 76, None), (3, 1, 74, None),
+      (4, .5, 76, None), (4.5, .5, 74, None), (5, .5, 72, None), (5.5, .5, 69, None), (6, 2, 72, None)]
+H3 = [(0, 1, 79, 76), (1, .5, 81, None), (1.5, .5, 79, None), (2, 1, 76, None), (3, 1, 79, None),
+      (4, 1, 84, 79), (5, .5, 81, None), (5.5, .5, 79, None), (6, 2, 76, None)]
 mel = []
-def put(theme, at): mel.extend([(at + s, d, m, sl) for (s, d, m, sl) in theme])
-put(T1, 16 * 1)          # 8.0s  speaker
-put(T2, 16 + 8)          # 10.0s
-# 12.0–15.0 : sustained heroic
-mel += [(24, 1, 76, None), (25, 1, 79, None), (26, 1, 81, None), (27, 3, 84, 79)]
-mel += [(30, .5, 81, None), (30.5, .5, 79, None), (31, 1, 76, None), (32, 1.5, 79, None), (33.5, .5, 81, None), (34, 2, 84, 79),
-        (36, 1, 81, None), (37, 1, 79, None), (38, 2, 76, None)]
-put(T3, 40); put(T1, 48)   # 20–25s (offer)
-mel += [(50, 1, 79, None), (51, 1, 81, None), (52, 1.5, 84, 79), (53.5, .5, 81, None), (54, 2, 79, None)]
-mel += [(56, 4, 76, None), (60, 0.1, 76, None)][:1]
-er = erhu(mel, 60)
+def put(theme, at): mel.extend([(at + s_, d, m, sl) for (s_, d, m, sl) in theme])
+put(H1, 16); put(H2, 24)            # 8.0 / 10.0 s  – speaker
+mel += [(24, 1, 72, None), (25, 1, 76, None), (26, 1, 79, None), (27, 3, 84, 79)]            # 12–15 s rising call
+put(H1, 30); put(H2, 34)            # 15 / 17 s – cards
+mel += [(38, 1, 79, None), (39, 1, 81, None)]
+put(H3, 40); put(H1, 44)            # 20 / 22 s – offer
+mel += [(48, 1, 76, None), (49, 1, 79, None), (50, 1, 84, None), (51, 1, 81, None), (52, 1.5, 84, 79), (53.5, .5, 81, None), (54, 2, 79, None)]
+mel += [(56, 4, 84, None)]
+heroic = [x for x in mel if x[0] >= 16]
+su = suona(heroic)
+er = erhu([(sb, db, m - 12, sl) for (sb, db, m, sl) in heroic if sb >= 40], 60)
+lead.b[:, 0] += su * 1.0 + er * .6; lead.b[:, 1] += su * 1.0 + er * .6
 # duck lead for 3.5-4.0? no – ok
-lead.b[:, 0] += er * 1.0; lead.b[:, 1] += er * 1.0
 
 # ---- sidechain: duck bass & guzheng under taiko hits ----
 duck = np.ones(N)

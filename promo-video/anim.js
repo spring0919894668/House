@@ -55,8 +55,8 @@ function clockIcon(g, x, y, s, p, t) {
   drawIcon(g, 'clock', x, y, s, clamp(p * 1.6), { lw: 5, glow: 'rgba(255,190,80,1)', color: '#f6d57e' });
   if (p < .6) return; const q = E.outElastic(clamp((p - .6) / .4)), c = s / 100;
   g.save(); g.translate(x - s / 2 + 50 * c, y - s / 2 + 50 * c); g.strokeStyle = '#fff3cf'; g.lineCap = 'round';
-  g.lineWidth = 5.5 * c; g.save(); g.rotate(lerp(-2, (9.5 / 12) * TAU - Math.PI / 2 + Math.PI * .0, q)); g.beginPath(); g.moveTo(0, 0); g.lineTo(26 * c, 0); g.stroke(); g.restore();
-  g.lineWidth = 4 * c; g.save(); g.rotate(lerp(1, (30 / 60) * TAU - Math.PI / 2, q)); g.beginPath(); g.moveTo(0, 0); g.lineTo(36 * c, 0); g.stroke(); g.restore();
+  g.lineWidth = 5.5 * c; g.save(); g.rotate(lerp(-2, (2 / 12) * TAU - Math.PI / 2, q)); g.beginPath(); g.moveTo(0, 0); g.lineTo(26 * c, 0); g.stroke(); g.restore();
+  g.lineWidth = 4 * c; g.save(); g.rotate(lerp(1, -Math.PI / 2, q)); g.beginPath(); g.moveTo(0, 0); g.lineTo(36 * c, 0); g.stroke(); g.restore();
   g.fillStyle = '#fff3cf'; g.beginPath(); g.arc(0, 0, 4 * c, 0, TAU); g.fill(); g.restore();
 }
 
@@ -70,9 +70,8 @@ function build() {
   L.y = lineSprites('2026', 340, 'gold', 'serif', -8);
   L.ttl = lineSprites('房仲逆風成交', 150, 'white', 'serif', 10, { sw: 7 });
   L.sub = textSprite('升級實戰診斷會', 112, 'gold', 'serif', { glowB: 28 });
-  L.tag1 = lineSprites('馬先右 × 相信學苑', 50, 'gold', 'serif6', 8);
-  L.tag2 = lineSprites('相信地產加盟主專場', 54, 'cream', 'serif6', 10);
-  L.hook_tag = lineSprites('馬先右 × 相信學苑　|　相信地產加盟主專場', 33, 'gold', 'serif6', 3);
+  L.tag1 = lineSprites('馬先右 × 相信學苑', 62, 'gold', 'serif6', 12);
+  L.hook_tag = lineSprites('馬先右 × 相信學苑', 36, 'gold', 'serif6', 8);
   L.name = lineSprites('馬先右', 176, 'gold', 'brush', 14);
   L.role = lineSprites('房仲金牌教練', 58, 'cream', 'serif6', 16);
   L.q1 = lineSprites('我不只告訴你別人怎麼成交，', 56, 'cream', 'serif6', 5);
@@ -96,8 +95,8 @@ function build() {
   L.of1 = lineSprites('現場將公開', 76, 'cream', 'serif6', 12);
   L.of2 = lineSprites('加盟主獨家優惠', 132, 'gold', 'serif', 0, { glowB: 30 });
   L.of3 = lineSprites('敬請務必參與！', 90, 'fire', 'serif', 8);
-  L.date = lineSprites('10/8', 310, 'gold', 'serif', -4);
-  L.time = lineSprites('上午 09:30–12:00', 92, 'cream', 'serif', 2);
+  L.date = lineSprites('11/15', 262, 'gold', 'serif', -4);
+  L.time = lineSprites('下午 2:00', 100, 'cream', 'serif', 6);
   L.tagTime = lineSprites('時間', 44, 'gold', 'serif6', 16); L.tagPlace = lineSprites('地點', 44, 'gold', 'serif6', 16);
   L.place = lineSprites('相信學苑', 138, 'gold', 'serif', 8);
   L.addr = textSprite('台中市西屯區河南路二段1號2樓', 46, 'cream', 'sans', { sw: 0, glowB: 0 });
@@ -109,8 +108,7 @@ function build() {
   L.fl2b = lineSprites('筆記本', 66, 'gold', 'serif', 6);
   L.fl2c = lineSprites('回去。', 66, 'cream', 'serif6', 6);
   L.brand = lineSprites('馬先右 × 相信學苑', 78, 'gold', 'serif', 10);
-  L.brand2 = lineSprites('相信地產加盟主專場', 48, 'cream', 'serif6', 14);
-  L.info1 = textSprite('10/8（四）上午 09:30–12:00', 38, 'cream', 'sans', { sw: 0, glowB: 0 });
+  L.info1 = textSprite('11/15（四）下午 2:00', 38, 'cream', 'sans', { sw: 0, glowB: 0 });
   L.info2 = textSprite('相信學苑｜台中市西屯區河南路二段1號2樓', 34, 'dim', 'sans', { sw: 0, glowB: 0 });
 }
 
@@ -122,7 +120,7 @@ function S0(g, t) { // hook
   if (t > 3) { g.save(); g.globalCompositeOperation = 'lighter'; g.lineCap = 'round'; for (let i = 0; i < 46; i++) { const a = hash(i * 4.1) * TAU, r = 1000 - 620 * E.inCubic(bu) * (.6 + .4 * hash(i)), len = 120 + 260 * bu; g.strokeStyle = `rgba(255,214,150,${.5 * bu * (.2 + hash(i * 3))})`; g.lineWidth = 1.5 + 3 * hash(i * 7); g.beginPath(); g.moveTo(540 + Math.cos(a) * r, 960 + Math.sin(a) * r * 1.3); g.lineTo(540 + Math.cos(a) * (r + len), 960 + Math.sin(a) * (r + len) * 1.3); g.stroke(); } g.restore(); }
   // brand strip at top
   const ta = prog(t, .45, .5);
-  if (ta > 0) { g.save(); g.globalAlpha = ta; wipeLine(g, L.hook_tag, 540, 150, t, .45, { per: .018, rise: 8 }); g.strokeStyle = 'rgba(246,213,126,.6)'; g.lineWidth = 2; const lw = 480 * ta; g.beginPath(); g.moveTo(540 - lw, 196); g.lineTo(540 + lw, 196); g.stroke(); g.restore(); }
+  if (ta > 0) { g.save(); g.globalAlpha = ta; wipeLine(g, L.hook_tag, 540, 150, t, .45, { per: .018, rise: 8 }); g.strokeStyle = 'rgba(246,213,126,.6)'; g.lineWidth = 2; const lw = 300 * ta; g.beginPath(); g.moveTo(540 - lw, 196); g.lineTo(540 + lw, 196); g.stroke(); g.restore(); }
   g.save(); g.translate(540, 960); g.scale(grow, grow); g.translate(-540, -960);
   // line 1
   ring(g, 540, 700, t, T.hook1, { R: 650, w: 18 }); sparks(g, 540, 700, t, T.hook1, { n: 30, seed: 2 }); splat(g, 540, 700, t, T.hook1, { seed: 4, n: 18 });
@@ -178,12 +176,9 @@ function S1(g, t) { // title
   // tag ribbon (4 beats of ka)
   const tp = prog(t, T.tag, .35);
   if (tp > 0) {
-    plate(g, 540, 1260, 900, 190, tp);
-    const lw = 360 * prog(t, T.tag + .1, .4, E.outCubic);
-    g.save(); g.strokeStyle = 'rgba(246,213,126,.75)'; g.lineWidth = 2; g.beginPath(); g.moveTo(540 - lw, 1260); g.lineTo(540 + lw, 1260); g.stroke(); g.restore();
-    wipeLine(g, L.tag1, 540, 1214, t, T.tag + .25, { per: .03, rise: 14 });
-    wipeLine(g, L.tag2, 540, 1307, t, T.tag + .5, { per: .03, rise: 14 });
-    if (t > T.tag + .75) glint(g, textSprite('相信地產加盟主專場', 54, 'cream', 'serif6'), 540, 1307, clamp((t - T.tag - .75) / .8), 1, 0, .7);
+    plate(g, 540, 1260, 820, 150, tp);
+    wipeLine(g, L.tag1, 540, 1260, t, T.tag + .25, { per: .04, rise: 14 });
+    if (t > T.tag + .75) glint(g, textSprite('馬先右 × 相信學苑', 62, 'gold', 'serif6'), 540, 1260, clamp((t - T.tag - .75) / .8), 1, 0, .8);
     ring(g, 540, 1260, t, T.tag + .75, { R: 560, w: 6, dur: .5, sy: .25 });
   }
   flash(g, t, T.title, .8, .1); flash(g, t, T.sub, .35, .06);
@@ -320,11 +315,11 @@ function S5(g, t) { // offer + date + place
     g.save(); g.strokeStyle = 'rgba(246,213,126,.7)'; g.lineWidth = 2; g.beginPath(); g.moveTo(215, 800); g.lineTo(215 + 760 * E.outCubic(clamp(ud / .5)), 800); g.stroke(); g.restore();
     ring(g, 440, 960, t, T.date, { R: 820, w: 24 }); sparks(g, 440, 960, t, T.date, { n: 46, seed: 140, speed: 1100, size: 6 });
     slamLine(g, L.date, 440, 960, t, T.date, { s0: 2.8, stagger: .06, rot: .2, dy: -110 });
-    if (ud > .7) glint(g, textSprite('10/8', 310, 'gold', 'serif'), 440 - 0, 960, ((ud - .7) % 2.4) / 1.0, 1, 0, .85);
+    if (ud > .7) glint(g, textSprite('11/15', 262, 'gold', 'serif'), 440, 960, ((ud - .7) % 2.4) / 1.0, 1, 0, .85);
     const ss = t - (T.date + .22);
     if (ss >= 0) { const k = 1 + 1.8 * Math.max(0, spring(ss, 10, 20)); drawSprite(g, L.sealWeek, 890, 940, k * .85, k * .85, .08 + .2 * spring(ss, 8, 18), clamp(ss * 20)); ring(g, 890, 940, t, T.date + .3, { R: 190, w: 8, dur: .4, color: 'rgba(255,100,70,1)' }); }
-    const cp = prog(t, T.date + .3, .8, E.lin); clockIcon(g, 118, 1150, 96, cp, t);
-    wipeLine(g, L.time, 600, 1150, t, T.date + .35, { per: .03, rise: 18 });
+    const cp = prog(t, T.date + .3, .8, E.lin); clockIcon(g, 285, 1150, 104, cp, t);
+    wipeLine(g, L.time, 630, 1150, t, T.date + .35, { per: .03, rise: 18 });
   }
   // place
   const up = t - T.place;
@@ -388,11 +383,10 @@ function S6(g, t) { // finale
     ring(g, 540, 1560, t, T.lockup, { R: 1100, w: 34 }); ring(g, 540, 1560, t, T.lockup + .06, { R: 760, w: 14, color: 'rgba(255,255,255,1)' });
     sparks(g, 540, 1500, t, T.lockup, { n: 90, seed: 180, speed: 1500, size: 8, life: 1.1 }); speedLines(g, 540, 1500, t, T.lockup, .6, { n: 60, seed: 12 });
     g.save(); g.globalAlpha = lp; plate(g, 540, 1560, 940, 300, lp, { c0: 'rgba(36,14,10,.84)', c1: 'rgba(10,6,8,.9)' }); g.restore();
-    slamLine(g, L.brand, 540, 1478, t, T.lockup, { s0: 2.2, stagger: .045, rot: .15, dy: -60 });
-    wipeLine(g, L.brand2, 540, 1556, t, T.lockup + .2, { per: .035, rise: 14 });
-    g.save(); g.strokeStyle = 'rgba(246,213,126,.7)'; g.lineWidth = 2; const lw = 400 * prog(t, T.lockup + .3, .5); g.beginPath(); g.moveTo(540 - lw, 1596); g.lineTo(540 + lw, 1596); g.stroke(); g.restore();
-    drawSprite(g, L.info1, 540, 1638, 1, 1, 0, prog(t, T.lockup + .5, .4)); drawSprite(g, L.info2, 540, 1690, 1, 1, 0, prog(t, T.lockup + .6, .4));
-    if (uk > .6) glint(g, textSprite('馬先右', 78, 'gold', 'serif'), 540, 1478, 0, 1);
+    slamLine(g, L.brand, 540, 1490, t, T.lockup, { s0: 2.2, stagger: .045, rot: .15, dy: -60 });
+    g.save(); g.strokeStyle = 'rgba(246,213,126,.7)'; g.lineWidth = 2; const lw = 400 * prog(t, T.lockup + .3, .5); g.beginPath(); g.moveTo(540 - lw, 1552); g.lineTo(540 + lw, 1552); g.stroke(); g.restore();
+    drawSprite(g, L.info1, 540, 1608, 1, 1, 0, prog(t, T.lockup + .5, .4)); drawSprite(g, L.info2, 540, 1662, 1, 1, 0, prog(t, T.lockup + .6, .4));
+    if (uk > .6) glint(g, textSprite('馬先右', 78, 'gold', 'serif'), 540, 1490, 0, 1);
     const ss = t - (T.lockup + .3); if (ss >= 0) { const k = 1 + 1.6 * Math.max(0, spring(ss, 10, 20)); drawSprite(g, L.sealBrand, 940, 1420, k * .62, k * .62, .1, clamp(ss * 20)); }
     flash(g, t, T.lockup, .75, .13);
   }
@@ -450,7 +444,7 @@ function frame(g, t) {
 /* ================= bootstrap ================= */
 let portrait;
 async function boot() {
-  await Promise.all(['NSerif9', 'NSerif6', 'NSans', 'Boku'].map(f => document.fonts.load(`40px ${f}`, '態度方法自己逆風成交馬先右10/8:–')));
+  await Promise.all(['NSerif9', 'NSerif6', 'NSans', 'Boku'].map(f => document.fonts.load(`40px ${f}`, '態度方法自己逆風成交馬先右11/15:')));
   await document.fonts.ready;
   initData(await (await fetch('cues.json')).json());
   portrait = await new Promise(r => { const im = new Image(); im.onload = () => r(im); im.src = 'assets/portrait.png'; });
